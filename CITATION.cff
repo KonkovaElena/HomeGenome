@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: "If you use HomeGenome in research or technical evaluation, please cite it using the metadata below."
+title: "HomeGenome"
+type: software
+version: 0.1.0
+date-released: 2026-04-21
+url: "https://github.com/KonkovaElena/HomeGenome"
+repository-code: "https://github.com/KonkovaElena/HomeGenome"
+license: MIT
+authors:
+  - family-names: Konkova
+    given-names: Elena
+abstract: >-
+  HomeGenome is a local-first genomics research repository and early control-plane
+  scaffold focused on air-gapped nanopore sequencing workflows, evidence-driven
+  interpretation, and reproducible personal-genomics architecture.
+keywords:
+  - genomics
+  - nanopore
+  - research-software
+  - personal-genomics
+  - control-plane
+  - local-first
