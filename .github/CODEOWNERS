@@ -1,0 +1,10 @@
+# Global ownership for the standalone HomeGenome repository.
+* @KonkovaElena
+
+# Protect policy, publication and runtime-control surfaces explicitly.
+/.github/ @KonkovaElena
+/CITATION.cff @KonkovaElena
+/README.md @KonkovaElena
+/docs/ @KonkovaElena
+/src/ @KonkovaElena
+/tests/ @KonkovaElena

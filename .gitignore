@@ -1,0 +1,60 @@
+# OS and editor state
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Python and notebook noise
+__pycache__/
+*.pyc
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Environment and local secrets
+.env
+.env.*
+!.env.example
+
+# Workflow state
+.nextflow/
+.nextflow*
+work/
+tmp/
+temp/
+cache/
+logs/
+artifacts/
+reports/
+state/
+
+# Raw sequencing and derived genomics outputs
+data/
+runs/
+results/
+uploads/
+models/
+*.pod5
+*.fast5
+*.fastq
+*.fastq.gz
+*.fq
+*.fq.gz
+*.bam
+*.bai
+*.bam.bai
+*.cram
+*.crai
+*.vcf.gz
+*.vcf.gz.tbi
+*.bed.gz
+*.bedMethyl
+*.mosdepth.*
+multiqc_report.html
+
+# Containers and local package state
+node_modules/
+dist/
+coverage/
+.nyc_output/
+.venv/
+venv/
