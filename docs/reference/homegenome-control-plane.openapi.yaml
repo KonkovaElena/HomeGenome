@@ -118,6 +118,7 @@ components:
         - objectId
         - uri
         - sourceUri
+        - checksum
         - mediaType
       properties:
         objectId:
@@ -128,6 +129,7 @@ components:
           type: string
         checksum:
           type: string
+          pattern: ^sha256:[a-f0-9]{64}$
         mediaType:
           type: string
       additionalProperties: false

@@ -20,6 +20,7 @@ import {
   BiosampleRecord,
   isRawCaptureArtifact,
   normalizeTimestamp,
+  normalizeSha256Checksum,
 } from "../domain/homeGenome";
 import { IArtifactStore } from "../ports/IArtifactStore";
 import {
@@ -124,7 +125,7 @@ export interface CaseBundleDrsObject {
   objectId: string;
   uri: string;
   sourceUri: string;
-  checksum?: string;
+  checksum: string;
   mediaType: string;
 }
 
@@ -425,7 +426,10 @@ export class HomeGenomeControlPlane {
       await this.requireRun(input.runId);
     }
 
-    const artifact = await this.deps.artifactStore.registerArtifact(input);
+    const artifact = await this.deps.artifactStore.registerArtifact({
+      ...input,
+      checksum: normalizeSha256Checksum(input.checksum),
+    });
 
     if (
       isRawCaptureArtifact(artifact.kind) &&
@@ -444,6 +448,7 @@ export class HomeGenomeControlPlane {
       artifactId: artifact.artifactId,
       kind: artifact.kind,
       uri: artifact.uri,
+      checksum: artifact.checksum,
       runId: artifact.runId,
     });
 
@@ -737,15 +742,14 @@ export class HomeGenomeControlPlane {
   }
 
   private toDrsObject(artifact: ArtifactManifestRecord): CaseBundleDrsObject {
-    const objectId = artifact.checksum
-      ? this.normalizeDrsObjectIdFromChecksum(artifact.checksum)
-      : `artifact:${artifact.artifactId}`;
+    const checksum = normalizeSha256Checksum(artifact.checksum);
+    const objectId = this.normalizeDrsObjectIdFromChecksum(checksum);
 
     return {
       objectId,
       uri: `drs://homegenome/${encodeURIComponent(objectId)}`,
       sourceUri: artifact.uri,
-      checksum: artifact.checksum,
+      checksum,
       mediaType: artifact.kind,
     };
   }

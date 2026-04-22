@@ -82,12 +82,15 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["objectId", "uri", "sourceUri", "mediaType"],
+        "required": ["objectId", "uri", "sourceUri", "checksum", "mediaType"],
         "properties": {
           "objectId": { "type": "string" },
           "uri": { "type": "string" },
           "sourceUri": { "type": "string" },
-          "checksum": { "type": "string" },
+          "checksum": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          },
           "mediaType": { "type": "string" }
         },
         "additionalProperties": false

@@ -12,6 +12,9 @@ import { InMemoryWorkflowDispatchSink } from "../src/adapters/InMemoryWorkflowDi
 import { NextflowWorkflowRunner } from "../src/adapters/NextflowWorkflowRunner";
 import { IMinKnowClient } from "../src/ports/IMinKnowClient";
 
+const WORKFLOW_ARTIFACT_CHECKSUM =
+  "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd";
+
 function createMinKnowClientStub(): IMinKnowClient {
   return {
     async getRunSnapshot(runId) {
@@ -99,6 +102,7 @@ async function prepareQcPassedCase(
     sampleId: `${caseId}-sample`,
     kind: "RAW_SIGNAL",
     uri: `runs/${caseId}/raw.pod5`,
+    checksum: WORKFLOW_ARTIFACT_CHECKSUM,
     createdAt: "2026-04-21T12:06:00.000Z",
   });
 

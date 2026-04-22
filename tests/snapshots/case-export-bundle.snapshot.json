@@ -1,0 +1,320 @@
+{
+  "schemaVersion": "1.0.0",
+  "bundleId": "homegenome-export-bundle-001",
+  "caseId": "case-export-001",
+  "generatedAt": "2026-04-22T08:11:00.000Z",
+  "generatedBy": "operator-export-001",
+  "roCrateMetadata": {
+    "@context": "https://w3id.org/ro/crate/1.1/context",
+    "@graph": [
+      {
+        "@id": "ro-crate-metadata.jsonld",
+        "@type": "CreativeWork",
+        "about": {
+          "@id": "./"
+        }
+      },
+      {
+        "@id": "./",
+        "@type": "Dataset",
+        "name": "HomeGenome Case Bundle case-export-001",
+        "identifier": "homegenome-export-bundle-001",
+        "dateCreated": "2026-04-22T08:11:00.000Z",
+        "creator": {
+          "@id": "urn:homegenome:agent:operator-export-001"
+        },
+        "hasPart": [
+          {
+            "@id": "runs/run-export-001/raw.pod5"
+          }
+        ]
+      },
+      {
+        "@id": "urn:homegenome:case:case-export-001",
+        "@type": "Dataset",
+        "name": "HomeGenome Case case-export-001",
+        "identifier": "case-export-001",
+        "dateCreated": "2026-04-22T08:00:00.000Z",
+        "dateModified": "2026-04-22T08:10:00.000Z"
+      },
+      {
+        "@id": "urn:homegenome:agent:operator-export-001",
+        "@type": "Person",
+        "name": "operator-export-001"
+      },
+      {
+        "@id": "runs/run-export-001/raw.pod5",
+        "@type": "File",
+        "name": "artifact-export-001",
+        "identifier": "drs://homegenome/sha256%3Acccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "encodingFormat": "RAW_SIGNAL",
+        "dateCreated": "2026-04-22T08:06:00.000Z",
+        "checksum": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      }
+    ]
+  },
+  "workflowRunCrates": [
+    {
+      "crateId": "run-analysis-run-export-001-crate",
+      "runId": "analysis-run-export-001",
+      "status": "RUNNING",
+      "workflowName": "wf-human-variation",
+      "executionProfile": "local-ont",
+      "acceptedAt": "2026-04-22T08:10:00.000Z",
+      "backend": "IN_MEMORY"
+    }
+  ],
+  "drsObjects": [
+    {
+      "objectId": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "uri": "drs://homegenome/sha256%3Acccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "sourceUri": "runs/run-export-001/raw.pod5",
+      "checksum": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "mediaType": "RAW_SIGNAL"
+    }
+  ],
+  "prov": {
+    "@context": "https://www.w3.org/ns/prov#",
+    "entity": "urn:homegenome:case:case-export-001",
+    "activity": "urn:homegenome:activity:bundle-export:case-export-001:2026-04-22T08:11:00.000Z",
+    "agent": "urn:homegenome:agent:operator-export-001",
+    "wasDerivedFrom": [
+      "urn:homegenome:event:case-export-001:1",
+      "urn:homegenome:event:case-export-001:2",
+      "urn:homegenome:event:case-export-001:3",
+      "urn:homegenome:event:case-export-001:4",
+      "urn:homegenome:event:case-export-001:5",
+      "urn:homegenome:event:case-export-001:6",
+      "urn:homegenome:event:case-export-001:7",
+      "urn:homegenome:event:case-export-001:8",
+      "urn:homegenome:event:case-export-001:9",
+      "urn:homegenome:event:case-export-001:10",
+      "urn:homegenome:event:case-export-001:11",
+      "urn:homegenome:event:case-export-001:12",
+      "urn:homegenome:event:case-export-001:13",
+      "urn:homegenome:event:case-export-001:14"
+    ],
+    "generatedAt": "2026-04-22T08:11:00.000Z"
+  },
+  "snapshot": {
+    "caseRecord": {
+      "caseId": "case-export-001",
+      "subjectId": "subject-export-001",
+      "status": "PRIMARY_ANALYSIS_RUNNING",
+      "createdAt": "2026-04-22T08:00:00.000Z",
+      "updatedAt": "2026-04-22T08:10:00.000Z"
+    },
+    "samples": [
+      {
+        "sampleId": "sample-export-001",
+        "caseId": "case-export-001",
+        "sampleType": "saliva",
+        "collectedAt": "2026-04-22T08:01:00.000Z",
+        "createdAt": "2026-04-22T08:02:00.000Z"
+      }
+    ],
+    "runs": [
+      {
+        "runId": "run-export-001",
+        "caseId": "case-export-001",
+        "sampleId": "sample-export-001",
+        "platform": "ONT_MINION",
+        "referenceBundleId": "bundle-export-001",
+        "status": "RUNNING",
+        "createdAt": "2026-04-22T08:04:00.000Z",
+        "updatedAt": "2026-04-22T08:05:00.000Z"
+      }
+    ],
+    "workflowDispatches": [
+      {
+        "dispatchId": "dispatch-export-001",
+        "caseId": "case-export-001",
+        "requestId": "request-export-001",
+        "workflowName": "wf-human-variation",
+        "referenceBundleId": "bundle-export-001",
+        "executionProfile": "local-ont",
+        "requestedAt": "2026-04-22T08:09:00.000Z",
+        "status": "PENDING"
+      }
+    ],
+    "workflowRuns": [
+      {
+        "runId": "analysis-run-export-001",
+        "caseId": "case-export-001",
+        "requestId": "request-export-001",
+        "workflowName": "wf-human-variation",
+        "referenceBundleId": "bundle-export-001",
+        "executionProfile": "local-ont",
+        "status": "RUNNING",
+        "acceptedAt": "2026-04-22T08:10:00.000Z",
+        "startedAt": "2026-04-22T08:10:00.000Z",
+        "terminalMetadata": {
+          "backend": "IN_MEMORY"
+        }
+      }
+    ],
+    "artifacts": [
+      {
+        "artifactId": "artifact-export-001",
+        "caseId": "case-export-001",
+        "runId": "run-export-001",
+        "sampleId": "sample-export-001",
+        "kind": "RAW_SIGNAL",
+        "uri": "runs/run-export-001/raw.pod5",
+        "checksum": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "createdAt": "2026-04-22T08:06:00.000Z"
+      }
+    ],
+    "events": [
+      {
+        "aggregateId": "case-export-001",
+        "type": "CASE_CREATED",
+        "occurredAt": "2026-04-22T08:00:00.000Z",
+        "detail": {
+          "subjectId": "subject-export-001",
+          "status": "INTAKE_PENDING"
+        },
+        "version": 1
+      },
+      {
+        "aggregateId": "case-export-001",
+        "type": "CASE_STATUS_TRANSITIONED",
+        "occurredAt": "2026-04-22T08:02:00.000Z",
+        "detail": {
+          "previousStatus": "INTAKE_PENDING",
+          "nextStatus": "BIOSAMPLE_REGISTERED"
+        },
+        "version": 2
+      },
+      {
+        "aggregateId": "case-export-001",
+        "type": "SAMPLE_REGISTERED",
+        "occurredAt": "2026-04-22T08:02:00.000Z",
+        "detail": {
+          "sampleId": "sample-export-001",
+          "sampleType": "saliva"
+        },
+        "version": 3
+      },
+      {
+        "aggregateId": "case-export-001",
+        "type": "CASE_STATUS_TRANSITIONED",
+        "occurredAt": "2026-04-22T08:04:00.000Z",
+        "detail": {
+          "previousStatus": "BIOSAMPLE_REGISTERED",
+          "nextStatus": "SEQUENCING_REQUESTED"
+        },
+        "version": 4
+      },
+      {
+        "aggregateId": "case-export-001",
+        "type": "SEQUENCING_RUN_REGISTERED",
+        "occurredAt": "2026-04-22T08:04:00.000Z",
+        "detail": {
+          "runId": "run-export-001",
+          "sampleId": "sample-export-001",
+          "platform": "ONT_MINION",
+          "referenceBundleId": "bundle-export-001"
+        },
+        "version": 5
+      },
+      {
+        "aggregateId": "case-export-001",
+        "type": "CASE_STATUS_TRANSITIONED",
+        "occurredAt": "2026-04-22T08:05:00.000Z",
+        "detail": {
+          "previousStatus": "SEQUENCING_REQUESTED",
+          "nextStatus": "SEQUENCING_RUNNING"
+        },
+        "version": 6
+      },
+      {
+        "aggregateId": "case-export-001",
+        "type": "SEQUENCING_RUN_STATUS_UPDATED",
+        "occurredAt": "2026-04-22T08:05:00.000Z",
+        "detail": {
+          "runId": "run-export-001",
+          "status": "RUNNING"
+        },
+        "version": 7
+      },
+      {
+        "aggregateId": "case-export-001",
+        "type": "CASE_STATUS_TRANSITIONED",
+        "occurredAt": "2026-04-22T08:06:00.000Z",
+        "detail": {
+          "previousStatus": "SEQUENCING_RUNNING",
+          "nextStatus": "RAW_ARTIFACTS_CAPTURED"
+        },
+        "version": 8
+      },
+      {
+        "aggregateId": "case-export-001",
+        "type": "ARTIFACT_REGISTERED",
+        "occurredAt": "2026-04-22T08:06:00.000Z",
+        "detail": {
+          "artifactId": "artifact-export-001",
+          "kind": "RAW_SIGNAL",
+          "uri": "runs/run-export-001/raw.pod5",
+          "checksum": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "runId": "run-export-001"
+        },
+        "version": 9
+      },
+      {
+        "aggregateId": "case-export-001",
+        "type": "CASE_STATUS_TRANSITIONED",
+        "occurredAt": "2026-04-22T08:07:00.000Z",
+        "detail": {
+          "previousStatus": "RAW_ARTIFACTS_CAPTURED",
+          "nextStatus": "QC_PENDING"
+        },
+        "version": 10
+      },
+      {
+        "aggregateId": "case-export-001",
+        "type": "CASE_STATUS_TRANSITIONED",
+        "occurredAt": "2026-04-22T08:08:00.000Z",
+        "detail": {
+          "previousStatus": "QC_PENDING",
+          "nextStatus": "QC_PASSED"
+        },
+        "version": 11
+      },
+      {
+        "aggregateId": "case-export-001",
+        "type": "ANALYSIS_WORKFLOW_REQUESTED",
+        "occurredAt": "2026-04-22T08:09:00.000Z",
+        "detail": {
+          "dispatchId": "dispatch-export-001",
+          "requestId": "request-export-001",
+          "workflowName": "wf-human-variation",
+          "referenceBundleId": "bundle-export-001",
+          "executionProfile": "local-ont"
+        },
+        "version": 12
+      },
+      {
+        "aggregateId": "case-export-001",
+        "type": "CASE_STATUS_TRANSITIONED",
+        "occurredAt": "2026-04-22T08:10:00.000Z",
+        "detail": {
+          "previousStatus": "QC_PASSED",
+          "nextStatus": "PRIMARY_ANALYSIS_RUNNING"
+        },
+        "version": 13
+      },
+      {
+        "aggregateId": "case-export-001",
+        "type": "ANALYSIS_WORKFLOW_RUN_STARTED",
+        "occurredAt": "2026-04-22T08:10:00.000Z",
+        "detail": {
+          "dispatchId": "dispatch-export-001",
+          "runId": "analysis-run-export-001",
+          "workflowName": "wf-human-variation"
+        },
+        "version": 14
+      }
+    ]
+  }
+}

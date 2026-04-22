@@ -153,7 +153,7 @@ export interface ArtifactManifestRecord {
   sampleId?: string;
   kind: ArtifactKind;
   uri: string;
-  checksum?: string;
+  checksum: string;
   createdAt: string;
 }
 
@@ -164,7 +164,7 @@ export interface RegisterArtifactInput {
   sampleId?: string;
   kind: ArtifactKind;
   uri: string;
-  checksum?: string;
+  checksum: string;
   createdAt?: string;
 }
 
@@ -294,4 +294,18 @@ export function assertAllowedCaseTransition(
 
 export function isRawCaptureArtifact(kind: ArtifactKind): boolean {
   return kind === "RAW_SIGNAL" || kind === "BASECALLS" || kind === "ALIGNMENT";
+}
+
+const SHA256_CHECKSUM_PATTERN = /^sha256:[a-f0-9]{64}$/i;
+
+export function normalizeSha256Checksum(value: string | undefined): string {
+  const normalized = value?.trim().toLowerCase();
+
+  if (!normalized || !SHA256_CHECKSUM_PATTERN.test(normalized)) {
+    throw new Error(
+      "Artifact checksum must be a sha256 digest prefixed with 'sha256:'",
+    );
+  }
+
+  return normalized;
 }

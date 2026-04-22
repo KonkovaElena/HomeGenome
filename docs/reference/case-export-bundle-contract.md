@@ -42,12 +42,20 @@ Top-level fields:
 
 Each artifact in `snapshot.artifacts` is mapped to one `drsObjects[]` entry:
 
-- if `artifact.checksum` exists, `objectId` is checksum-normalized (prefer `sha256:*`);
-- otherwise `objectId = "artifact:<artifactId>"`;
+- `artifact.checksum` is mandatory and must be a normalized `sha256:*` digest;
+- `objectId` is checksum-normalized and content-addressed;
 - `uri = drs://homegenome/<url-encoded-objectId>`;
 - `sourceUri` preserves the local artifact URI.
 
 This is intentionally DRS-like, not a full DRS server implementation.
+
+## Artifact Hashing Policy
+
+For the current runtime baseline:
+
+- `attachArtifact()` rejects artifacts that do not provide a normalized `sha256:*` checksum;
+- exported DRS-like records always carry a checksum;
+- RO-Crate file entities carry the same checksum into the metadata graph.
 
 ## RO-Crate Mapping
 
@@ -81,6 +89,10 @@ Behavioral trap for this contract:
 
 - `tests/homegenome-control-plane.test.ts`
 - test name: `control plane exports a case bundle with RO-Crate, PROV, and DRS references`
+
+Stability rail:
+
+- the same test also uses a checked-in golden file snapshot for the exported bundle payload.
 
 ## Non-Goals (Current)
 

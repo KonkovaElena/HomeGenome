@@ -33,9 +33,11 @@ It separates:
 | Case export packaging | RO-Crate envelope | `implemented` | `exportCaseBundle()` emits `roCrateMetadata` with `@context` and `@graph`. |
 | Provenance representation | W3C PROV-compatible summary | `implemented` | `exportCaseBundle()` emits `prov` with entity/activity/agent/wasDerivedFrom. |
 | Artifact addressing | DRS-like object references | `implemented` | Artifact list is projected to `drs://homegenome/...` URIs with stable object IDs. |
+| Artifact integrity | Mandatory sha256 artifact hashing | `implemented` | Artifact registration now requires normalized `sha256:*` digests before export. |
 | Workflow run provenance | Workflow-run crate projection | `implemented` | `workflowRunCrates[]` emitted per workflow run in bundle export. |
 | Reproducible orchestration | Nextflow runner seam | `implemented` | `IAnalysisWorkflowRunner` + `NextflowWorkflowRunner` already in baseline. |
 | Telemetry control | MinKNOW telemetry/adaptive sampling seam | `implemented` | `IMinKnowClient` + control-plane methods are wired and tested. |
+| Quality verification | Built-in Node coverage thresholds + file snapshot rail | `implemented` | `test:coverage` and checked-in export bundle snapshot guard contract drift. |
 | Data API interoperability | GA4GH DRS API server | `planned` | Current layer is DRS-like contract; full DRS REST surface is not implemented. |
 | Workflow API interoperability | GA4GH WES/TES contracts | `planned` | Current layer uses internal runner/sink contracts with similar intent. |
 | Tool registry interoperability | GA4GH TRS | `planned` | No TRS endpoint yet; reference bundle registry is local-only. |

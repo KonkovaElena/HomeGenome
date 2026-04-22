@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import path from "node:path";
 import { HomeGenomeControlPlane } from "../src/application/HomeGenomeControlPlane";
 import { InMemoryArtifactStore } from "../src/adapters/InMemoryArtifactStore";
 import { InMemoryAnalysisWorkflowRunner } from "../src/adapters/InMemoryAnalysisWorkflowRunner";
@@ -10,6 +11,13 @@ import { InMemorySequencingRunCatalog } from "../src/adapters/InMemorySequencing
 import { InMemoryStateMachineGuard } from "../src/adapters/InMemoryStateMachineGuard";
 import { InMemoryWorkflowDispatchSink } from "../src/adapters/InMemoryWorkflowDispatchSink";
 import { IMinKnowClient } from "../src/ports/IMinKnowClient";
+
+const RAW_SIGNAL_CHECKSUM =
+  "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+const WORKFLOW_SIGNAL_CHECKSUM =
+  "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+const EXPORT_SIGNAL_CHECKSUM =
+  "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
 
 function createMinKnowClientStub(): IMinKnowClient {
   return {
@@ -110,6 +118,7 @@ test("control plane tracks a minimal HomeGenome case lifecycle", async () => {
       sampleId: "sample-001",
       kind: "RAW_SIGNAL",
       uri: "runs/run-001/raw/readset.pod5",
+      checksum: RAW_SIGNAL_CHECKSUM,
       createdAt: "2026-04-21T10:30:00.000Z",
     },
     "corr-005",
@@ -138,6 +147,56 @@ test("control plane tracks a minimal HomeGenome case lifecycle", async () => {
   assert.equal(snapshot.events.length >= 7, true);
   assert.equal(snapshot.runs[0].referenceBundleId, "bundle-grch38-v1");
   assert.equal(snapshot.artifacts[0].kind, "RAW_SIGNAL");
+  assert.equal(snapshot.artifacts[0].checksum, RAW_SIGNAL_CHECKSUM);
+});
+
+test("control plane rejects artifacts without a normalized sha256 checksum", async () => {
+  const controlPlane = createControlPlane();
+
+  await controlPlane.createCase({
+    caseId: "case-checksum-guard-001",
+    subjectId: "subject-checksum-guard-001",
+    createdAt: "2026-04-22T07:00:00.000Z",
+  });
+
+  await controlPlane.registerSample({
+    sampleId: "sample-checksum-guard-001",
+    caseId: "case-checksum-guard-001",
+    sampleType: "blood",
+    collectedAt: "2026-04-22T07:01:00.000Z",
+    createdAt: "2026-04-22T07:02:00.000Z",
+  });
+
+  await controlPlane.registerReferenceBundle({
+    bundleId: "bundle-checksum-guard-001",
+    name: "GRCh38 bundle",
+    version: "2026.04",
+    createdAt: "2026-04-22T07:03:00.000Z",
+  });
+
+  await controlPlane.registerSequencingRun({
+    runId: "run-checksum-guard-001",
+    caseId: "case-checksum-guard-001",
+    sampleId: "sample-checksum-guard-001",
+    platform: "ONT_MINION",
+    referenceBundleId: "bundle-checksum-guard-001",
+    createdAt: "2026-04-22T07:04:00.000Z",
+  });
+
+  await assert.rejects(
+    () =>
+      controlPlane.attachArtifact({
+        artifactId: "artifact-checksum-guard-001",
+        caseId: "case-checksum-guard-001",
+        runId: "run-checksum-guard-001",
+        sampleId: "sample-checksum-guard-001",
+        kind: "RAW_SIGNAL",
+        uri: "runs/run-checksum-guard-001/raw.pod5",
+        checksum: "sha256:abc123",
+        createdAt: "2026-04-22T07:05:00.000Z",
+      }),
+    /artifact checksum must be a sha256 digest/i,
+  );
 });
 
 test("control plane rejects sequencing runs that reference unknown samples", async () => {
@@ -379,7 +438,7 @@ test("control plane rejects adaptive sampling when sequencing run is not active"
   );
 });
 
-test("control plane exports a case bundle with RO-Crate, PROV, and DRS references", async () => {
+test("control plane exports a case bundle with RO-Crate, PROV, and DRS references", async (t) => {
   const controlPlane = createControlPlane();
 
   await controlPlane.createCase({
@@ -425,7 +484,7 @@ test("control plane exports a case bundle with RO-Crate, PROV, and DRS reference
     sampleId: "sample-export-001",
     kind: "RAW_SIGNAL",
     uri: "runs/run-export-001/raw.pod5",
-    checksum: "sha256:abc123",
+    checksum: EXPORT_SIGNAL_CHECKSUM,
     createdAt: "2026-04-22T08:06:00.000Z",
   });
 
@@ -451,6 +510,11 @@ test("control plane exports a case bundle with RO-Crate, PROV, and DRS reference
     requestedAt: "2026-04-22T08:09:00.000Z",
   });
 
+  t.mock.timers.enable({
+    apis: ["Date"],
+    now: new Date("2026-04-22T08:10:00.000Z"),
+  });
+
   await controlPlane.startAnalysisWorkflowRun({
     dispatchId: "dispatch-export-001",
     runId: "analysis-run-export-001",
@@ -472,9 +536,17 @@ test("control plane exports a case bundle with RO-Crate, PROV, and DRS reference
   assert.equal(bundle.workflowRunCrates.length, 1);
   assert.equal(bundle.workflowRunCrates[0].runId, "analysis-run-export-001");
   assert.equal(bundle.drsObjects.length, 1);
-  assert.equal(bundle.drsObjects[0].objectId, "sha256:abc123");
+  assert.equal(bundle.drsObjects[0].objectId, EXPORT_SIGNAL_CHECKSUM);
   assert.equal(
     bundle.drsObjects[0].uri,
-    "drs://homegenome/sha256%3Aabc123",
+    "drs://homegenome/sha256%3Acccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  );
+
+  t.assert.fileSnapshot(
+    bundle,
+    path.resolve("tests", "snapshots", "case-export-bundle.snapshot.json"),
+    {
+      serializers: [(value) => JSON.stringify(value, null, 2) + "\n"],
+    },
   );
 });
