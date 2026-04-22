@@ -113,6 +113,56 @@ export interface HomeGenomeCaseSnapshot {
   events: ReadonlyArray<HomeGenomeAuditEventRecord>;
 }
 
+export interface ExportCaseBundleInput {
+  caseId: string;
+  bundleId?: string;
+  generatedAt?: string;
+  generatedBy?: string;
+}
+
+export interface CaseBundleDrsObject {
+  objectId: string;
+  uri: string;
+  sourceUri: string;
+  checksum?: string;
+  mediaType: string;
+}
+
+export interface WorkflowRunExportBundleRecord {
+  crateId: string;
+  runId: string;
+  status: AnalysisWorkflowRunRecord["status"];
+  workflowName: string;
+  executionProfile: string;
+  acceptedAt: string;
+  completedAt?: string;
+  backend?: NonNullable<AnalysisWorkflowRunRecord["terminalMetadata"]>["backend"];
+  nextflowSessionId?: string;
+}
+
+export interface CaseExportBundle {
+  schemaVersion: "1.0.0";
+  bundleId: string;
+  caseId: string;
+  generatedAt: string;
+  generatedBy: string;
+  roCrateMetadata: {
+    "@context": "https://w3id.org/ro/crate/1.1/context";
+    "@graph": ReadonlyArray<Record<string, unknown>>;
+  };
+  workflowRunCrates: ReadonlyArray<WorkflowRunExportBundleRecord>;
+  drsObjects: ReadonlyArray<CaseBundleDrsObject>;
+  prov: {
+    "@context": "https://www.w3.org/ns/prov#";
+    entity: string;
+    activity: string;
+    agent: string;
+    wasDerivedFrom: ReadonlyArray<string>;
+    generatedAt: string;
+  };
+  snapshot: HomeGenomeCaseSnapshot;
+}
+
 export interface HomeGenomeControlPlaneDependencies {
   sampleRegistry: ISampleRegistry;
   sequencingRunCatalog: ISequencingRunCatalog;
@@ -526,6 +576,114 @@ export class HomeGenomeControlPlane {
     };
   }
 
+  async exportCaseBundle(
+    input: ExportCaseBundleInput,
+  ): Promise<CaseExportBundle> {
+    const snapshot = await this.getCaseSnapshot(input.caseId);
+    const generatedAt = normalizeTimestamp(input.generatedAt);
+    const generatedBy =
+      input.generatedBy?.trim() || "homegenome-control-plane";
+    const bundleId =
+      input.bundleId?.trim() || `case-${snapshot.caseRecord.caseId}-bundle`;
+
+    const caseEntityId = `urn:homegenome:case:${snapshot.caseRecord.caseId}`;
+    const exportActivityId =
+      `urn:homegenome:activity:bundle-export:${snapshot.caseRecord.caseId}:${generatedAt}`;
+    const exportAgentId =
+      `urn:homegenome:agent:${encodeURIComponent(generatedBy)}`;
+
+    const drsObjects = snapshot.artifacts.map((artifact) =>
+      this.toDrsObject(artifact),
+    );
+
+    const workflowRunCrates = snapshot.workflowRuns.map((run) => ({
+      crateId: `run-${run.runId}-crate`,
+      runId: run.runId,
+      status: run.status,
+      workflowName: run.workflowName,
+      executionProfile: run.executionProfile,
+      acceptedAt: run.acceptedAt,
+      completedAt: run.completedAt,
+      backend: run.terminalMetadata?.backend,
+      nextflowSessionId: run.terminalMetadata?.nextflowSessionId,
+    }));
+
+    const roCrateGraph: Record<string, unknown>[] = [
+      {
+        "@id": "ro-crate-metadata.jsonld",
+        "@type": "CreativeWork",
+        about: {
+          "@id": "./",
+        },
+      },
+      {
+        "@id": "./",
+        "@type": "Dataset",
+        name: `HomeGenome Case Bundle ${snapshot.caseRecord.caseId}`,
+        identifier: bundleId,
+        dateCreated: generatedAt,
+        creator: {
+          "@id": exportAgentId,
+        },
+        hasPart: snapshot.artifacts.map((artifact) => ({
+          "@id": artifact.uri,
+        })),
+      },
+      {
+        "@id": caseEntityId,
+        "@type": "Dataset",
+        name: `HomeGenome Case ${snapshot.caseRecord.caseId}`,
+        identifier: snapshot.caseRecord.caseId,
+        dateCreated: snapshot.caseRecord.createdAt,
+        dateModified: snapshot.caseRecord.updatedAt,
+      },
+      {
+        "@id": exportAgentId,
+        "@type": "Person",
+        name: generatedBy,
+      },
+    ];
+
+    for (const artifact of snapshot.artifacts) {
+      const drsObject = this.toDrsObject(artifact);
+      roCrateGraph.push({
+        "@id": artifact.uri,
+        "@type": "File",
+        name: artifact.artifactId,
+        identifier: drsObject.uri,
+        encodingFormat: artifact.kind,
+        dateCreated: artifact.createdAt,
+        checksum: artifact.checksum,
+      });
+    }
+
+    return {
+      schemaVersion: "1.0.0",
+      bundleId,
+      caseId: snapshot.caseRecord.caseId,
+      generatedAt,
+      generatedBy,
+      roCrateMetadata: {
+        "@context": "https://w3id.org/ro/crate/1.1/context",
+        "@graph": roCrateGraph,
+      },
+      workflowRunCrates,
+      drsObjects,
+      prov: {
+        "@context": "https://www.w3.org/ns/prov#",
+        entity: caseEntityId,
+        activity: exportActivityId,
+        agent: exportAgentId,
+        wasDerivedFrom: snapshot.events.map(
+          (event) =>
+            `urn:homegenome:event:${snapshot.caseRecord.caseId}:${event.version}`,
+        ),
+        generatedAt,
+      },
+      snapshot,
+    };
+  }
+
   private async appendCaseEvent(
     caseId: string,
     type: string,
@@ -576,5 +734,31 @@ export class HomeGenomeControlPlane {
     }
 
     return dispatch;
+  }
+
+  private toDrsObject(artifact: ArtifactManifestRecord): CaseBundleDrsObject {
+    const objectId = artifact.checksum
+      ? this.normalizeDrsObjectIdFromChecksum(artifact.checksum)
+      : `artifact:${artifact.artifactId}`;
+
+    return {
+      objectId,
+      uri: `drs://homegenome/${encodeURIComponent(objectId)}`,
+      sourceUri: artifact.uri,
+      checksum: artifact.checksum,
+      mediaType: artifact.kind,
+    };
+  }
+
+  private normalizeDrsObjectIdFromChecksum(checksum: string): string {
+    const normalized = checksum.trim();
+
+    if (!normalized) {
+      return "artifact:unknown";
+    }
+
+    return /^sha256:/i.test(normalized)
+      ? `sha256:${normalized.replace(/^sha256:/i, "")}`
+      : normalized;
   }
 }

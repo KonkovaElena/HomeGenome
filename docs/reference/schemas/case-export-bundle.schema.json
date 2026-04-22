@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/KonkovaElena/HomeGenome/docs/reference/schemas/case-export-bundle.schema.json",
+  "title": "HomeGenome Case Export Bundle",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "bundleId",
+    "caseId",
+    "generatedAt",
+    "generatedBy",
+    "roCrateMetadata",
+    "workflowRunCrates",
+    "drsObjects",
+    "prov",
+    "snapshot"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "bundleId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "caseId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "generatedBy": {
+      "type": "string",
+      "minLength": 1
+    },
+    "roCrateMetadata": {
+      "type": "object",
+      "required": ["@context", "@graph"],
+      "properties": {
+        "@context": {
+          "type": "string"
+        },
+        "@graph": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "workflowRunCrates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "crateId",
+          "runId",
+          "status",
+          "workflowName",
+          "executionProfile",
+          "acceptedAt"
+        ],
+        "properties": {
+          "crateId": { "type": "string" },
+          "runId": { "type": "string" },
+          "status": { "type": "string" },
+          "workflowName": { "type": "string" },
+          "executionProfile": { "type": "string" },
+          "acceptedAt": { "type": "string", "format": "date-time" },
+          "completedAt": { "type": "string", "format": "date-time" },
+          "backend": { "type": "string" },
+          "nextflowSessionId": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "drsObjects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["objectId", "uri", "sourceUri", "mediaType"],
+        "properties": {
+          "objectId": { "type": "string" },
+          "uri": { "type": "string" },
+          "sourceUri": { "type": "string" },
+          "checksum": { "type": "string" },
+          "mediaType": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "prov": {
+      "type": "object",
+      "required": ["@context", "entity", "activity", "agent", "wasDerivedFrom", "generatedAt"],
+      "properties": {
+        "@context": { "type": "string" },
+        "entity": { "type": "string" },
+        "activity": { "type": "string" },
+        "agent": { "type": "string" },
+        "wasDerivedFrom": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "generatedAt": { "type": "string", "format": "date-time" }
+      },
+      "additionalProperties": false
+    },
+    "snapshot": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": false
+}

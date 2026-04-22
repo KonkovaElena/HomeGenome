@@ -22,6 +22,7 @@ The formal intended-use boundary is in [docs/reference/intended-use.md](docs/ref
 - An early control-plane scaffold with case lifecycle state management, workflow dispatch tracking, event-backed audit history, and Nextflow integration seams.
 - File-backed durable adapters with cross-process locking for the current local persistence baseline.
 - Explicit ports for sequencing telemetry and ONT MinKNOW adaptive sampling control.
+- A portable Case Export Bundle contract with RO-Crate metadata, PROV summary, and DRS-like artifact references.
 
 ## Quick Start
 
@@ -49,6 +50,7 @@ The code in `src/` and `tests/` is intentionally narrow. It currently covers:
 - file-backed durability for events and workflow state;
 - sequencing telemetry ingestion;
 - adaptive sampling updates through an explicit `IMinKnowClient` port.
+- case-level export bundles with RO-Crate metadata and PROV/DRS-compatible fields.
 
 It does not yet implement a full sequencing operations stack, a MinKNOW adapter, or clinical-grade durability.
 
@@ -58,9 +60,12 @@ Start here if you want the shortest path through the repo:
 
 1. [docs/reference/intended-use.md](docs/reference/intended-use.md)
 2. [docs/reference/architecture-skeleton-2026-04-21.md](docs/reference/architecture-skeleton-2026-04-21.md)
-3. [docs/reference/pipeline-architecture.md](docs/reference/pipeline-architecture.md)
-4. [docs/how-to/implementation-roadmap-2026-04-21.md](docs/how-to/implementation-roadmap-2026-04-21.md)
-5. [docs/reference/sources-and-provenance.md](docs/reference/sources-and-provenance.md)
+3. [docs/reference/case-export-bundle-contract.md](docs/reference/case-export-bundle-contract.md)
+4. [docs/reference/homegenome-control-plane.openapi.yaml](docs/reference/homegenome-control-plane.openapi.yaml)
+5. [docs/reference/standards-adoption-matrix-2026-04-22.md](docs/reference/standards-adoption-matrix-2026-04-22.md)
+6. [docs/reference/pipeline-architecture.md](docs/reference/pipeline-architecture.md)
+7. [docs/how-to/implementation-roadmap-2026-04-21.md](docs/how-to/implementation-roadmap-2026-04-21.md)
+8. [docs/reference/sources-and-provenance.md](docs/reference/sources-and-provenance.md)
 
 The full docs map is in [docs/README.md](docs/README.md).
 

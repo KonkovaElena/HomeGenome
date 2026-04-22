@@ -22,6 +22,7 @@ HomeGenome — локальный genomics research repository про air-gapped
 - ранний control plane scaffold с жизненным циклом кейса, workflow dispatch tracking и event-backed provenance;
 - file-backed durable adapters с cross-process locking для текущей локальной persistence baseline;
 - явные порты для sequencing telemetry и adaptive sampling через ONT MinKNOW.
+- переносимый Case Export Bundle контракт с RO-Crate metadata, PROV summary и DRS-like ссылками на артефакты.
 
 ## Быстрый старт
 
@@ -49,6 +50,7 @@ npm run build
 - file-backed durability для event и workflow state;
 - ingestion sequencing telemetry;
 - adaptive sampling updates через явный `IMinKnowClient` port.
+- экспорт case bundle с RO-Crate metadata и PROV/DRS-совместимыми полями.
 
 Пока здесь нет полноценного MinKNOW adapter, полного sequencing operations layer и clinical-grade durability.
 
@@ -58,9 +60,12 @@ npm run build
 
 1. [docs/reference/intended-use.md](docs/reference/intended-use.md)
 2. [docs/reference/architecture-skeleton-2026-04-21.md](docs/reference/architecture-skeleton-2026-04-21.md)
-3. [docs/reference/pipeline-architecture.md](docs/reference/pipeline-architecture.md)
-4. [docs/how-to/implementation-roadmap-2026-04-21.md](docs/how-to/implementation-roadmap-2026-04-21.md)
-5. [docs/reference/sources-and-provenance.md](docs/reference/sources-and-provenance.md)
+3. [docs/reference/case-export-bundle-contract.md](docs/reference/case-export-bundle-contract.md)
+4. [docs/reference/homegenome-control-plane.openapi.yaml](docs/reference/homegenome-control-plane.openapi.yaml)
+5. [docs/reference/standards-adoption-matrix-2026-04-22.md](docs/reference/standards-adoption-matrix-2026-04-22.md)
+6. [docs/reference/pipeline-architecture.md](docs/reference/pipeline-architecture.md)
+7. [docs/how-to/implementation-roadmap-2026-04-21.md](docs/how-to/implementation-roadmap-2026-04-21.md)
+8. [docs/reference/sources-and-provenance.md](docs/reference/sources-and-provenance.md)
 
 Полная карта документов находится в [docs/README.md](docs/README.md).
 

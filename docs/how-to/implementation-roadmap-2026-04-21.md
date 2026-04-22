@@ -65,6 +65,7 @@ mode: "how-to"
 - file-backed durable adapters for `IEventStore`, `IWorkflowDispatchSink` and `IAnalysisWorkflowRunner` завершены;
 - sequencing run telemetry and adaptive sampling state are now modeled explicitly in the control plane;
 - `IMinKnowClient` port is wired into the application layer for telemetry sync and adaptive sampling control;
+- case-level export bundles now include RO-Crate metadata plus PROV/DRS-compatible fields for portable provenance handoff;
 - SQLite-backed durability остаётся optional следующей итерацией, если появится потребность в richer query semantics.
 
 Первые use cases:
@@ -75,6 +76,7 @@ mode: "how-to"
 - advance lifecycle state;
 - ingest sequencing telemetry;
 - apply adaptive sampling targets for active ONT runs;
+- export case bundles with portable provenance metadata;
 - query case lineage.
 
 ## Phase 2. Workflow Execution Layer
@@ -115,6 +117,10 @@ Deliverables:
 - `IHlaTypingConsensusProvider`
 - threshold-based manual review state
 - confidence and disagreement metadata
+
+Bridge to interoperability:
+
+- keep `CaseExportBundle` aligned with `RO-Crate`, `W3C PROV-O`, and DRS-like artifact identifiers so later GA4GH export layers are additive rather than disruptive.
 
 Это фаза, где HomeGenome перестаёт быть просто run-tracker и становится evidence-aware genomics system.
 

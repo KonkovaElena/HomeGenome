@@ -1,0 +1,241 @@
+openapi: 3.1.0
+info:
+  title: HomeGenome Control Plane API
+  version: 0.1.0
+  summary: Minimal external API contract for local case state and portable case export bundles.
+  description: |
+    This OpenAPI surface describes the current minimal, repository-level API contract.
+    It is intentionally narrow and aligned with the local-first control-plane baseline.
+servers:
+  - url: https://localhost:7443
+    description: Local control-plane endpoint (illustrative)
+paths:
+  /cases/{caseId}/snapshot:
+    get:
+      summary: Get current case snapshot
+      operationId: getCaseSnapshot
+      parameters:
+        - name: caseId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Case snapshot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HomeGenomeCaseSnapshot"
+        "404":
+          description: Unknown case
+  /cases/{caseId}/export-bundle:
+    post:
+      summary: Export portable case bundle
+      operationId: exportCaseBundle
+      parameters:
+        - name: caseId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExportCaseBundleInput"
+      responses:
+        "200":
+          description: Exported case bundle
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaseExportBundle"
+        "404":
+          description: Unknown case
+components:
+  schemas:
+    ExportCaseBundleInput:
+      type: object
+      additionalProperties: false
+      properties:
+        bundleId:
+          type: string
+        generatedAt:
+          type: string
+          format: date-time
+        generatedBy:
+          type: string
+    HomeGenomeCaseSnapshot:
+      type: object
+      required:
+        - caseRecord
+        - samples
+        - runs
+        - workflowDispatches
+        - workflowRuns
+        - artifacts
+        - events
+      properties:
+        caseRecord:
+          type: object
+          additionalProperties: true
+        samples:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        runs:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        workflowDispatches:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        workflowRuns:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        artifacts:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        events:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+      additionalProperties: false
+    CaseBundleDrsObject:
+      type: object
+      required:
+        - objectId
+        - uri
+        - sourceUri
+        - mediaType
+      properties:
+        objectId:
+          type: string
+        uri:
+          type: string
+        sourceUri:
+          type: string
+        checksum:
+          type: string
+        mediaType:
+          type: string
+      additionalProperties: false
+    WorkflowRunExportBundleRecord:
+      type: object
+      required:
+        - crateId
+        - runId
+        - status
+        - workflowName
+        - executionProfile
+        - acceptedAt
+      properties:
+        crateId:
+          type: string
+        runId:
+          type: string
+        status:
+          type: string
+        workflowName:
+          type: string
+        executionProfile:
+          type: string
+        acceptedAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+        backend:
+          type: string
+        nextflowSessionId:
+          type: string
+      additionalProperties: false
+    CaseExportBundle:
+      type: object
+      required:
+        - schemaVersion
+        - bundleId
+        - caseId
+        - generatedAt
+        - generatedBy
+        - roCrateMetadata
+        - workflowRunCrates
+        - drsObjects
+        - prov
+        - snapshot
+      properties:
+        schemaVersion:
+          type: string
+          const: "1.0.0"
+        bundleId:
+          type: string
+        caseId:
+          type: string
+        generatedAt:
+          type: string
+          format: date-time
+        generatedBy:
+          type: string
+        roCrateMetadata:
+          type: object
+          required:
+            - "@context"
+            - "@graph"
+          properties:
+            "@context":
+              type: string
+            "@graph":
+              type: array
+              items:
+                type: object
+                additionalProperties: true
+          additionalProperties: false
+        workflowRunCrates:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkflowRunExportBundleRecord"
+        drsObjects:
+          type: array
+          items:
+            $ref: "#/components/schemas/CaseBundleDrsObject"
+        prov:
+          type: object
+          required:
+            - "@context"
+            - entity
+            - activity
+            - agent
+            - wasDerivedFrom
+            - generatedAt
+          properties:
+            "@context":
+              type: string
+            entity:
+              type: string
+            activity:
+              type: string
+            agent:
+              type: string
+            wasDerivedFrom:
+              type: array
+              items:
+                type: string
+            generatedAt:
+              type: string
+              format: date-time
+          additionalProperties: false
+        snapshot:
+          $ref: "#/components/schemas/HomeGenomeCaseSnapshot"
+      additionalProperties: false

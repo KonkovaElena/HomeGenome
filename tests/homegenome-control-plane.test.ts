@@ -378,3 +378,103 @@ test("control plane rejects adaptive sampling when sequencing run is not active"
     /only active ont sequencing runs/i,
   );
 });
+
+test("control plane exports a case bundle with RO-Crate, PROV, and DRS references", async () => {
+  const controlPlane = createControlPlane();
+
+  await controlPlane.createCase({
+    caseId: "case-export-001",
+    subjectId: "subject-export-001",
+    createdAt: "2026-04-22T08:00:00.000Z",
+  });
+
+  await controlPlane.registerSample({
+    sampleId: "sample-export-001",
+    caseId: "case-export-001",
+    sampleType: "saliva",
+    collectedAt: "2026-04-22T08:01:00.000Z",
+    createdAt: "2026-04-22T08:02:00.000Z",
+  });
+
+  await controlPlane.registerReferenceBundle({
+    bundleId: "bundle-export-001",
+    name: "GRCh38 bundle",
+    version: "2026.04",
+    createdAt: "2026-04-22T08:03:00.000Z",
+  });
+
+  await controlPlane.registerSequencingRun({
+    runId: "run-export-001",
+    caseId: "case-export-001",
+    sampleId: "sample-export-001",
+    platform: "ONT_MINION",
+    referenceBundleId: "bundle-export-001",
+    createdAt: "2026-04-22T08:04:00.000Z",
+  });
+
+  await controlPlane.updateSequencingRunStatus({
+    runId: "run-export-001",
+    status: "RUNNING",
+    occurredAt: "2026-04-22T08:05:00.000Z",
+  });
+
+  await controlPlane.attachArtifact({
+    artifactId: "artifact-export-001",
+    caseId: "case-export-001",
+    runId: "run-export-001",
+    sampleId: "sample-export-001",
+    kind: "RAW_SIGNAL",
+    uri: "runs/run-export-001/raw.pod5",
+    checksum: "sha256:abc123",
+    createdAt: "2026-04-22T08:06:00.000Z",
+  });
+
+  await controlPlane.transitionCaseStatus({
+    caseId: "case-export-001",
+    nextStatus: "QC_PENDING",
+    occurredAt: "2026-04-22T08:07:00.000Z",
+  });
+
+  await controlPlane.transitionCaseStatus({
+    caseId: "case-export-001",
+    nextStatus: "QC_PASSED",
+    occurredAt: "2026-04-22T08:08:00.000Z",
+  });
+
+  await controlPlane.requestAnalysisWorkflow({
+    dispatchId: "dispatch-export-001",
+    caseId: "case-export-001",
+    requestId: "request-export-001",
+    workflowName: "wf-human-variation",
+    referenceBundleId: "bundle-export-001",
+    executionProfile: "local-ont",
+    requestedAt: "2026-04-22T08:09:00.000Z",
+  });
+
+  await controlPlane.startAnalysisWorkflowRun({
+    dispatchId: "dispatch-export-001",
+    runId: "analysis-run-export-001",
+    occurredAt: "2026-04-22T08:10:00.000Z",
+  });
+
+  const bundle = await controlPlane.exportCaseBundle({
+    caseId: "case-export-001",
+    bundleId: "homegenome-export-bundle-001",
+    generatedAt: "2026-04-22T08:11:00.000Z",
+    generatedBy: "operator-export-001",
+  });
+
+  assert.equal(bundle.schemaVersion, "1.0.0");
+  assert.equal(bundle.caseId, "case-export-001");
+  assert.equal(bundle.bundleId, "homegenome-export-bundle-001");
+  assert.equal(bundle.roCrateMetadata["@context"], "https://w3id.org/ro/crate/1.1/context");
+  assert.equal(bundle.prov["@context"], "https://www.w3.org/ns/prov#");
+  assert.equal(bundle.workflowRunCrates.length, 1);
+  assert.equal(bundle.workflowRunCrates[0].runId, "analysis-run-export-001");
+  assert.equal(bundle.drsObjects.length, 1);
+  assert.equal(bundle.drsObjects[0].objectId, "sha256:abc123");
+  assert.equal(
+    bundle.drsObjects[0].uri,
+    "drs://homegenome/sha256%3Aabc123",
+  );
+});
