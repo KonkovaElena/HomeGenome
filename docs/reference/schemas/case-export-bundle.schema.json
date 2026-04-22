@@ -46,7 +46,7 @@
         "@graph": {
           "type": "array",
           "items": {
-            "type": "object"
+            "$ref": "#/$defs/roCrateGraphEntry"
           }
         }
       },
@@ -55,65 +55,317 @@
     "workflowRunCrates": {
       "type": "array",
       "items": {
-        "type": "object",
-        "required": [
-          "crateId",
-          "runId",
-          "status",
-          "workflowName",
-          "executionProfile",
-          "acceptedAt"
-        ],
-        "properties": {
-          "crateId": { "type": "string" },
-          "runId": { "type": "string" },
-          "status": { "type": "string" },
-          "workflowName": { "type": "string" },
-          "executionProfile": { "type": "string" },
-          "acceptedAt": { "type": "string", "format": "date-time" },
-          "completedAt": { "type": "string", "format": "date-time" },
-          "backend": { "type": "string" },
-          "nextflowSessionId": { "type": "string" }
-        },
-        "additionalProperties": false
+        "$ref": "#/$defs/workflowRunExportBundleRecord"
       }
     },
     "drsObjects": {
       "type": "array",
       "items": {
-        "type": "object",
-        "required": ["objectId", "uri", "sourceUri", "checksum", "mediaType"],
-        "properties": {
-          "objectId": { "type": "string" },
-          "uri": { "type": "string" },
-          "sourceUri": { "type": "string" },
-          "checksum": {
-            "type": "string",
-            "pattern": "^sha256:[a-f0-9]{64}$"
-          },
-          "mediaType": { "type": "string" }
-        },
-        "additionalProperties": false
+        "$ref": "#/$defs/caseBundleDrsObject"
       }
     },
     "prov": {
+      "$ref": "#/$defs/provDocument"
+    },
+    "snapshot": {
+      "$ref": "#/$defs/homeGenomeCaseSnapshot"
+    }
+  },
+  "$defs": {
+    "roCrateGraphEntry": {
       "type": "object",
-      "required": ["@context", "entity", "activity", "agent", "wasDerivedFrom", "generatedAt"],
       "properties": {
-        "@context": { "type": "string" },
-        "entity": { "type": "string" },
-        "activity": { "type": "string" },
-        "agent": { "type": "string" },
-        "wasDerivedFrom": {
-          "type": "array",
-          "items": { "type": "string" }
+        "@id": { "type": "string" },
+        "@type": {
+          "oneOf": [
+            { "type": "string" },
+            {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          ]
         },
-        "generatedAt": { "type": "string", "format": "date-time" }
+        "conformsTo": {
+          "type": "object",
+          "properties": {
+            "@id": { "type": "string", "format": "uri" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": true
+    },
+    "caseRecord": {
+      "type": "object",
+      "required": ["caseId", "subjectId", "status", "createdAt", "updatedAt"],
+      "properties": {
+        "caseId": { "type": "string" },
+        "subjectId": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
       },
       "additionalProperties": false
     },
-    "snapshot": {
-      "type": "object"
+    "biosampleRecord": {
+      "type": "object",
+      "required": ["sampleId", "caseId", "sampleType", "collectedAt", "createdAt"],
+      "properties": {
+        "sampleId": { "type": "string" },
+        "caseId": { "type": "string" },
+        "sampleType": { "type": "string" },
+        "collectedAt": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "notes": { "type": "string" },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "sequencingRunTelemetrySnapshot": {
+      "type": "object",
+      "required": ["observedAt"],
+      "properties": {
+        "observedAt": { "type": "string", "format": "date-time" },
+        "readCount": { "type": "integer" },
+        "activePores": { "type": "integer" },
+        "n50": { "type": "integer" },
+        "estimatedCoverage": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "adaptiveSamplingTargetRecord": {
+      "type": "object",
+      "required": ["label", "targetDefinitionUri", "format", "appliedAt"],
+      "properties": {
+        "label": { "type": "string" },
+        "targetDefinitionUri": { "type": "string" },
+        "format": { "type": "string" },
+        "appliedAt": { "type": "string", "format": "date-time" },
+        "checksum": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "adaptiveSamplingSessionRecord": {
+      "type": "object",
+      "required": ["sessionId", "state", "appliedAt", "target"],
+      "properties": {
+        "sessionId": { "type": "string" },
+        "state": { "type": "string" },
+        "appliedAt": { "type": "string", "format": "date-time" },
+        "requestedBy": { "type": "string" },
+        "target": { "$ref": "#/$defs/adaptiveSamplingTargetRecord" }
+      },
+      "additionalProperties": false
+    },
+    "sequencingRunRecord": {
+      "type": "object",
+      "required": ["runId", "caseId", "sampleId", "platform", "status", "createdAt", "updatedAt"],
+      "properties": {
+        "runId": { "type": "string" },
+        "caseId": { "type": "string" },
+        "sampleId": { "type": "string" },
+        "platform": { "type": "string" },
+        "referenceBundleId": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "telemetry": { "$ref": "#/$defs/sequencingRunTelemetrySnapshot" },
+        "adaptiveSamplingSession": { "$ref": "#/$defs/adaptiveSamplingSessionRecord" }
+      },
+      "additionalProperties": false
+    },
+    "workflowDispatchRecord": {
+      "type": "object",
+      "required": ["dispatchId", "caseId", "requestId", "workflowName", "referenceBundleId", "executionProfile", "requestedAt", "status"],
+      "properties": {
+        "dispatchId": { "type": "string" },
+        "caseId": { "type": "string" },
+        "requestId": { "type": "string" },
+        "workflowName": { "type": "string" },
+        "referenceBundleId": { "type": "string" },
+        "executionProfile": { "type": "string" },
+        "requestedBy": { "type": "string" },
+        "requestedAt": { "type": "string", "format": "date-time" },
+        "idempotencyKey": { "type": "string" },
+        "correlationId": { "type": "string" },
+        "status": { "type": "string", "const": "PENDING" }
+      },
+      "additionalProperties": false
+    },
+    "analysisWorkflowTerminalMetadata": {
+      "type": "object",
+      "required": ["backend"],
+      "properties": {
+        "backend": { "type": "string", "enum": ["IN_MEMORY", "FILE_BACKED", "NEXTFLOW"] },
+        "nextflowSessionId": { "type": "string" },
+        "nextflowRunName": { "type": "string" },
+        "launchDir": { "type": "string" },
+        "workDir": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "analysisWorkflowRunRecord": {
+      "type": "object",
+      "required": ["runId", "caseId", "requestId", "workflowName", "referenceBundleId", "executionProfile", "status", "acceptedAt"],
+      "properties": {
+        "runId": { "type": "string" },
+        "caseId": { "type": "string" },
+        "requestId": { "type": "string" },
+        "workflowName": { "type": "string" },
+        "referenceBundleId": { "type": "string" },
+        "executionProfile": { "type": "string" },
+        "status": { "type": "string" },
+        "acceptedAt": { "type": "string", "format": "date-time" },
+        "startedAt": { "type": "string", "format": "date-time" },
+        "completedAt": { "type": "string", "format": "date-time" },
+        "failureReason": { "type": "string" },
+        "failureCategory": { "type": "string" },
+        "terminalMetadata": { "$ref": "#/$defs/analysisWorkflowTerminalMetadata" }
+      },
+      "additionalProperties": false
+    },
+    "artifactManifestRecord": {
+      "type": "object",
+      "required": ["artifactId", "caseId", "kind", "uri", "checksum", "createdAt"],
+      "properties": {
+        "artifactId": { "type": "string" },
+        "caseId": { "type": "string" },
+        "runId": { "type": "string" },
+        "sampleId": { "type": "string" },
+        "kind": { "type": "string" },
+        "uri": { "type": "string" },
+        "checksum": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "additionalProperties": false
+    },
+    "homeGenomeAuditEventRecord": {
+      "type": "object",
+      "required": ["aggregateId", "type", "occurredAt", "detail", "version"],
+      "properties": {
+        "aggregateId": { "type": "string" },
+        "type": { "type": "string" },
+        "occurredAt": { "type": "string", "format": "date-time" },
+        "correlationId": { "type": "string" },
+        "detail": { "type": "object", "additionalProperties": true },
+        "version": { "type": "integer" }
+      },
+      "additionalProperties": false
+    },
+    "homeGenomeCaseSnapshot": {
+      "type": "object",
+      "required": ["caseRecord", "samples", "runs", "workflowDispatches", "workflowRuns", "artifacts", "events"],
+      "properties": {
+        "caseRecord": { "$ref": "#/$defs/caseRecord" },
+        "samples": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/biosampleRecord" }
+        },
+        "runs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/sequencingRunRecord" }
+        },
+        "workflowDispatches": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/workflowDispatchRecord" }
+        },
+        "workflowRuns": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/analysisWorkflowRunRecord" }
+        },
+        "artifacts": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/artifactManifestRecord" }
+        },
+        "events": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/homeGenomeAuditEventRecord" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "workflowRunExportBundleRecord": {
+      "type": "object",
+      "required": ["crateId", "runId", "status", "workflowName", "executionProfile", "acceptedAt"],
+      "properties": {
+        "crateId": { "type": "string" },
+        "runId": { "type": "string" },
+        "status": { "type": "string" },
+        "workflowName": { "type": "string" },
+        "executionProfile": { "type": "string" },
+        "acceptedAt": { "type": "string", "format": "date-time" },
+        "completedAt": { "type": "string", "format": "date-time" },
+        "backend": { "type": "string" },
+        "nextflowSessionId": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "caseBundleDrsChecksum": {
+      "type": "object",
+      "required": ["checksum", "type"],
+      "properties": {
+        "checksum": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "type": { "type": "string", "const": "sha-256" }
+      },
+      "additionalProperties": false
+    },
+    "caseBundleDrsAccessUrl": {
+      "type": "object",
+      "required": ["url"],
+      "properties": {
+        "url": { "type": "string", "format": "uri" }
+      },
+      "additionalProperties": false
+    },
+    "caseBundleDrsAccessMethod": {
+      "type": "object",
+      "required": ["type", "accessUrl"],
+      "properties": {
+        "type": { "type": "string", "const": "file" },
+        "accessUrl": { "$ref": "#/$defs/caseBundleDrsAccessUrl" }
+      },
+      "additionalProperties": false
+    },
+    "caseBundleDrsObject": {
+      "type": "object",
+      "required": ["id", "selfUri", "sourceUri", "name", "createdTime", "mimeType", "checksums", "accessMethods"],
+      "properties": {
+        "id": { "type": "string" },
+        "selfUri": { "type": "string", "format": "uri" },
+        "sourceUri": { "type": "string" },
+        "name": { "type": "string" },
+        "createdTime": { "type": "string", "format": "date-time" },
+        "mimeType": { "type": "string" },
+        "checksums": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/caseBundleDrsChecksum" }
+        },
+        "accessMethods": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/caseBundleDrsAccessMethod" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "provDocument": {
+      "type": "object",
+      "required": ["@context", "entity", "activity", "agent", "wasGeneratedBy", "used", "wasAssociatedWith", "wasDerivedFrom"],
+      "properties": {
+        "@context": { "type": "string" },
+        "entity": { "type": "object", "additionalProperties": { "type": "object", "additionalProperties": true } },
+        "activity": { "type": "object", "additionalProperties": { "type": "object", "additionalProperties": true } },
+        "agent": { "type": "object", "additionalProperties": { "type": "object", "additionalProperties": true } },
+        "wasGeneratedBy": { "type": "object", "additionalProperties": { "type": "object", "additionalProperties": { "type": "string" } } },
+        "used": { "type": "object", "additionalProperties": { "type": "object", "additionalProperties": { "type": "string" } } },
+        "wasAssociatedWith": { "type": "object", "additionalProperties": { "type": "object", "additionalProperties": { "type": "string" } } },
+        "wasDerivedFrom": { "type": "object", "additionalProperties": { "type": "object", "additionalProperties": { "type": "string" } } }
+      },
+      "additionalProperties": false
     }
   },
   "additionalProperties": false

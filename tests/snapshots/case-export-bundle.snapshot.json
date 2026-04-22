@@ -10,6 +10,9 @@
       {
         "@id": "ro-crate-metadata.jsonld",
         "@type": "CreativeWork",
+        "conformsTo": {
+          "@id": "https://w3id.org/ro/crate/1.1"
+        },
         "about": {
           "@id": "./"
         }
@@ -20,6 +23,9 @@
         "name": "HomeGenome Case Bundle case-export-001",
         "identifier": "homegenome-export-bundle-001",
         "dateCreated": "2026-04-22T08:11:00.000Z",
+        "license": {
+          "@id": "https://spdx.org/licenses/MIT.html"
+        },
         "creator": {
           "@id": "urn:homegenome:agent:operator-export-001"
         },
@@ -46,10 +52,11 @@
         "@id": "runs/run-export-001/raw.pod5",
         "@type": "File",
         "name": "artifact-export-001",
-        "identifier": "drs://homegenome/sha256%3Acccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
-        "encodingFormat": "RAW_SIGNAL",
+        "identifier": "drs://homegenome.local/sha256-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "encodingFormat": "application/vnd.ont.pod5",
+        "contentSize": 28,
         "dateCreated": "2026-04-22T08:06:00.000Z",
-        "checksum": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        "checksum": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       }
     ]
   },
@@ -66,35 +73,90 @@
   ],
   "drsObjects": [
     {
-      "objectId": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
-      "uri": "drs://homegenome/sha256%3Acccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "id": "sha256-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "selfUri": "drs://homegenome.local/sha256-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
       "sourceUri": "runs/run-export-001/raw.pod5",
-      "checksum": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
-      "mediaType": "RAW_SIGNAL"
+      "name": "artifact-export-001",
+      "createdTime": "2026-04-22T08:06:00.000Z",
+      "mimeType": "application/vnd.ont.pod5",
+      "checksums": [
+        {
+          "checksum": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "type": "sha-256"
+        }
+      ],
+      "accessMethods": [
+        {
+          "type": "file",
+          "accessUrl": {
+            "url": "file:///runs/run-export-001/raw.pod5"
+          }
+        }
+      ]
     }
   ],
   "prov": {
     "@context": "https://www.w3.org/ns/prov#",
-    "entity": "urn:homegenome:case:case-export-001",
-    "activity": "urn:homegenome:activity:bundle-export:case-export-001:2026-04-22T08:11:00.000Z",
-    "agent": "urn:homegenome:agent:operator-export-001",
-    "wasDerivedFrom": [
-      "urn:homegenome:event:case-export-001:1",
-      "urn:homegenome:event:case-export-001:2",
-      "urn:homegenome:event:case-export-001:3",
-      "urn:homegenome:event:case-export-001:4",
-      "urn:homegenome:event:case-export-001:5",
-      "urn:homegenome:event:case-export-001:6",
-      "urn:homegenome:event:case-export-001:7",
-      "urn:homegenome:event:case-export-001:8",
-      "urn:homegenome:event:case-export-001:9",
-      "urn:homegenome:event:case-export-001:10",
-      "urn:homegenome:event:case-export-001:11",
-      "urn:homegenome:event:case-export-001:12",
-      "urn:homegenome:event:case-export-001:13",
-      "urn:homegenome:event:case-export-001:14"
-    ],
-    "generatedAt": "2026-04-22T08:11:00.000Z"
+    "entity": {
+      "urn:homegenome:case:case-export-001": {
+        "prov:type": "prov:Entity",
+        "prov:label": "HomeGenome Case case-export-001"
+      },
+      "urn:homegenome:bundle:homegenome-export-bundle-001": {
+        "prov:type": "prov:Entity",
+        "prov:label": "HomeGenome Export Bundle homegenome-export-bundle-001"
+      },
+      "urn:homegenome:artifact:artifact-export-001": {
+        "prov:type": "prov:Entity",
+        "prov:label": "artifact-export-001"
+      }
+    },
+    "activity": {
+      "urn:homegenome:activity:bundle-export:case-export-001:2026-04-22T08:11:00.000Z": {
+        "prov:type": "prov:Activity",
+        "prov:startedAtTime": "2026-04-22T08:11:00.000Z",
+        "prov:endedAtTime": "2026-04-22T08:11:00.000Z"
+      }
+    },
+    "agent": {
+      "urn:homegenome:agent:operator-export-001": {
+        "prov:type": "prov:Person",
+        "prov:label": "operator-export-001"
+      }
+    },
+    "wasGeneratedBy": {
+      "_:generated-1": {
+        "prov:entity": "urn:homegenome:bundle:homegenome-export-bundle-001",
+        "prov:activity": "urn:homegenome:activity:bundle-export:case-export-001:2026-04-22T08:11:00.000Z",
+        "prov:time": "2026-04-22T08:11:00.000Z"
+      }
+    },
+    "used": {
+      "_:used-1": {
+        "prov:activity": "urn:homegenome:activity:bundle-export:case-export-001:2026-04-22T08:11:00.000Z",
+        "prov:entity": "urn:homegenome:case:case-export-001"
+      },
+      "_:used-2": {
+        "prov:activity": "urn:homegenome:activity:bundle-export:case-export-001:2026-04-22T08:11:00.000Z",
+        "prov:entity": "urn:homegenome:artifact:artifact-export-001"
+      }
+    },
+    "wasAssociatedWith": {
+      "_:associated-1": {
+        "prov:activity": "urn:homegenome:activity:bundle-export:case-export-001:2026-04-22T08:11:00.000Z",
+        "prov:agent": "urn:homegenome:agent:operator-export-001"
+      }
+    },
+    "wasDerivedFrom": {
+      "_:derived-1": {
+        "prov:generatedEntity": "urn:homegenome:bundle:homegenome-export-bundle-001",
+        "prov:usedEntity": "urn:homegenome:case:case-export-001"
+      },
+      "_:derived-2": {
+        "prov:generatedEntity": "urn:homegenome:bundle:homegenome-export-bundle-001",
+        "prov:usedEntity": "urn:homegenome:artifact:artifact-export-001"
+      }
+    }
   },
   "snapshot": {
     "caseRecord": {

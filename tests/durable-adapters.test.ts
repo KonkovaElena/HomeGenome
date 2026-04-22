@@ -4,8 +4,12 @@ import { mkdtemp } from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
 import {
+  FileBackedArtifactStore,
   FileBackedAnalysisWorkflowRunner,
   FileBackedEventStore,
+  FileBackedReferenceBundleRegistry,
+  FileBackedSampleRegistry,
+  FileBackedSequencingRunCatalog,
   FileBackedWorkflowDispatchSink,
 } from "../src";
 
@@ -130,4 +134,95 @@ test("file-backed analysis workflow runner persists terminal workflow state", as
 
   assert.equal(run.status, "COMPLETED");
   assert.equal(run.caseId, "case-file-003");
+  assert.equal(run.terminalMetadata?.backend, "FILE_BACKED");
+});
+
+test("file-backed sample registry persists cases and samples across adapter instances", async () => {
+  const tempDir = await createTempDir();
+  const filePath = path.join(tempDir, "samples.json");
+
+  const registry = new FileBackedSampleRegistry(filePath);
+  await registry.createCase({
+    caseId: "case-file-010",
+    subjectId: "subject-file-010",
+    createdAt: "2026-04-22T10:00:00.000Z",
+  });
+  await registry.registerSample({
+    sampleId: "sample-file-010",
+    caseId: "case-file-010",
+    sampleType: "saliva",
+    collectedAt: "2026-04-22T10:01:00.000Z",
+    createdAt: "2026-04-22T10:02:00.000Z",
+  });
+
+  const reloadedRegistry = new FileBackedSampleRegistry(filePath);
+  const caseRecord = await reloadedRegistry.getCase("case-file-010");
+  const samples = await reloadedRegistry.listSamples("case-file-010");
+
+  assert.equal(caseRecord?.subjectId, "subject-file-010");
+  assert.equal(samples.length, 1);
+  assert.equal(samples[0].sampleId, "sample-file-010");
+});
+
+test("file-backed sequencing run catalog persists runtime state across adapter instances", async () => {
+  const tempDir = await createTempDir();
+  const filePath = path.join(tempDir, "runs-catalog.json");
+
+  const catalog = new FileBackedSequencingRunCatalog(filePath);
+  await catalog.registerRun({
+    runId: "run-file-020",
+    caseId: "case-file-020",
+    sampleId: "sample-file-020",
+    platform: "ONT_MINION",
+    createdAt: "2026-04-22T10:03:00.000Z",
+  });
+  await catalog.updateRunStatus(
+    "run-file-020",
+    "RUNNING",
+    "2026-04-22T10:04:00.000Z",
+    {
+      telemetry: {
+        observedAt: "2026-04-22T10:04:00.000Z",
+        readCount: 10,
+      },
+    },
+  );
+
+  const reloadedCatalog = new FileBackedSequencingRunCatalog(filePath);
+  const run = await reloadedCatalog.getRun("run-file-020");
+
+  assert.equal(run?.status, "RUNNING");
+  assert.equal(run?.telemetry?.readCount, 10);
+});
+
+test("file-backed artifact and reference registries persist across adapter instances", async () => {
+  const tempDir = await createTempDir();
+  const artifactsPath = path.join(tempDir, "artifacts.json");
+  const bundlesPath = path.join(tempDir, "bundles.json");
+
+  const artifactStore = new FileBackedArtifactStore(artifactsPath);
+  const bundleRegistry = new FileBackedReferenceBundleRegistry(bundlesPath);
+
+  await artifactStore.registerArtifact({
+    artifactId: "artifact-file-030",
+    caseId: "case-file-030",
+    kind: "RAW_SIGNAL",
+    uri: "runs/case-file-030/raw.pod5",
+    checksum: "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    createdAt: "2026-04-22T10:05:00.000Z",
+  });
+  await bundleRegistry.registerBundle({
+    bundleId: "bundle-file-030",
+    name: "GRCh38",
+    version: "2026.04",
+    createdAt: "2026-04-22T10:06:00.000Z",
+  });
+
+  const reloadedArtifactStore = new FileBackedArtifactStore(artifactsPath);
+  const reloadedBundleRegistry = new FileBackedReferenceBundleRegistry(bundlesPath);
+  const artifact = await reloadedArtifactStore.getArtifact("artifact-file-030");
+  const bundle = await reloadedBundleRegistry.getBundle("bundle-file-030");
+
+  assert.equal(artifact?.artifactId, "artifact-file-030");
+  assert.equal(bundle?.bundleId, "bundle-file-030");
 });

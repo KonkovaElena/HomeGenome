@@ -177,6 +177,49 @@ function extractJsonSchemaShape(
   };
 }
 
+function resolveJsonPointer(
+  root: Record<string, unknown>,
+  pointer: string,
+): Record<string, unknown> {
+  if (!pointer.startsWith("#/")) {
+    throw new Error(`Unsupported JSON Schema $ref: ${pointer}`);
+  }
+
+  const segments = pointer
+    .slice(2)
+    .split("/")
+    .map((segment) => segment.replace(/~1/g, "/").replace(/~0/g, "~"));
+
+  let current: unknown = root;
+
+  for (const segment of segments) {
+    if (!current || typeof current !== "object" || !(segment in current)) {
+      throw new Error(`Could not resolve JSON Schema $ref: ${pointer}`);
+    }
+
+    current = (current as Record<string, unknown>)[segment];
+  }
+
+  if (!current || typeof current !== "object") {
+    throw new Error(`Resolved JSON Schema $ref is not an object: ${pointer}`);
+  }
+
+  return current as Record<string, unknown>;
+}
+
+function resolveJsonSchemaNode(
+  root: Record<string, unknown>,
+  node: Record<string, unknown>,
+): Record<string, unknown> {
+  const ref = node.$ref;
+
+  if (typeof ref === "string") {
+    return resolveJsonPointer(root, ref);
+  }
+
+  return node;
+}
+
 function assertExactMatch(
   label: string,
   expected: string[],
@@ -262,9 +305,13 @@ function main(): void {
 
   const drsTs = extractInterfaceShape(codeFile, "CaseBundleDrsObject");
   const drsYaml = extractYamlSchemaShape(openApiText, "CaseBundleDrsObject");
+  const drsItemsNode = resolveJsonSchemaNode(
+    jsonSchema,
+    ((((jsonSchema.properties as Record<string, unknown>).drsObjects as Record<string, unknown>)
+      .items ?? {}) as Record<string, unknown>),
+  );
   const drsJson = extractJsonSchemaShape(
-    (((jsonSchema.properties as Record<string, unknown>).drsObjects as Record<string, unknown>)
-      .items ?? {}) as Record<string, unknown>,
+    drsItemsNode,
   );
 
   assertExactMatch(
@@ -331,15 +378,33 @@ function main(): void {
     errors,
   );
   assertContains(
+    "OpenAPI RO-Crate metadata descriptor",
+    openApiText,
+    "conformsTo",
+    errors,
+  );
+  assertContains(
+    "OpenAPI PROV relations",
+    openApiText,
+    "wasGeneratedBy",
+    errors,
+  );
+  assertContains(
     "OpenAPI caseId path parameter",
     openApiText,
     "- name: caseId",
     errors,
   );
   assertContains(
-    "JSON Schema checksum pattern",
+    "JSON Schema artifact checksum pattern",
     JSON.stringify(jsonSchema),
     "^sha256:[a-f0-9]{64}$",
+    errors,
+  );
+  assertContains(
+    "JSON Schema DRS checksum type",
+    JSON.stringify(jsonSchema),
+    "sha-256",
     errors,
   );
 

@@ -43,9 +43,11 @@ Top-level fields:
 Each artifact in `snapshot.artifacts` is mapped to one `drsObjects[]` entry:
 
 - `artifact.checksum` is mandatory and must be a normalized `sha256:*` digest;
-- `objectId` is checksum-normalized and content-addressed;
-- `uri = drs://homegenome/<url-encoded-objectId>`;
-- `sourceUri` preserves the local artifact URI.
+- `id` is a DRS-safe content-addressed identifier derived from the checksum;
+- `selfUri = drs://homegenome.local/<url-encoded-id>`;
+- `checksums[]` uses DRS-style checksum objects with `type = sha-256`;
+- `accessMethods[]` currently exposes a local `file` access method;
+- `sourceUri` preserves the control-plane logical artifact URI.
 
 This is intentionally DRS-like, not a full DRS server implementation.
 
@@ -62,6 +64,7 @@ For the current runtime baseline:
 `roCrateMetadata` uses:
 
 - `@context`: `https://w3id.org/ro/crate/1.1/context`
+- metadata descriptor with `conformsTo = https://w3id.org/ro/crate/1.1`
 - `@graph`: includes metadata entity, bundle dataset entity, case dataset entity, exporter agent entity, and one file entity per artifact.
 
 This enables low-friction evolution toward richer RO-Crate packaging without breaking the current contract.
@@ -71,11 +74,11 @@ This enables low-friction evolution toward richer RO-Crate packaging without bre
 `prov` uses:
 
 - `@context`: `https://www.w3.org/ns/prov#`
-- `entity`: case URN
-- `activity`: export activity URN
-- `agent`: exporter URN
-- `wasDerivedFrom`: event URNs derived from case audit events
-- `generatedAt`: export timestamp
+- `entity`, `activity`, and `agent` maps keyed by URN
+- `wasGeneratedBy`: exported bundle entity linked to export activity
+- `used`: export activity linked to case and artifact entities
+- `wasAssociatedWith`: export activity linked to exporter agent
+- `wasDerivedFrom`: exported bundle linked to the case entity and artifact entities
 
 ## JSON Schema
 

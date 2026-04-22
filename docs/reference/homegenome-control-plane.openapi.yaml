@@ -67,6 +67,277 @@ components:
           format: date-time
         generatedBy:
           type: string
+    RoCrateGraphEntry:
+      type: object
+      properties:
+        "@id":
+          type: string
+        "@type":
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                type: string
+        conformsTo:
+          type: object
+          properties:
+            "@id":
+              type: string
+              format: uri
+          additionalProperties: false
+      additionalProperties: true
+    HomeGenomeCaseRecord:
+      type: object
+      required: [caseId, subjectId, status, createdAt, updatedAt]
+      properties:
+        caseId:
+          type: string
+        subjectId:
+          type: string
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      additionalProperties: false
+    BiosampleRecord:
+      type: object
+      required: [sampleId, caseId, sampleType, collectedAt, createdAt]
+      properties:
+        sampleId:
+          type: string
+        caseId:
+          type: string
+        sampleType:
+          type: string
+        collectedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        notes:
+          type: string
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+      additionalProperties: false
+    SequencingRunTelemetrySnapshot:
+      type: object
+      required: [observedAt]
+      properties:
+        observedAt:
+          type: string
+          format: date-time
+        readCount:
+          type: integer
+        activePores:
+          type: integer
+        n50:
+          type: integer
+        estimatedCoverage:
+          type: number
+      additionalProperties: false
+    AdaptiveSamplingTargetRecord:
+      type: object
+      required: [label, targetDefinitionUri, format, appliedAt]
+      properties:
+        label:
+          type: string
+        targetDefinitionUri:
+          type: string
+        format:
+          type: string
+        appliedAt:
+          type: string
+          format: date-time
+        checksum:
+          type: string
+      additionalProperties: false
+    AdaptiveSamplingSessionRecord:
+      type: object
+      required: [sessionId, state, appliedAt, target]
+      properties:
+        sessionId:
+          type: string
+        state:
+          type: string
+        appliedAt:
+          type: string
+          format: date-time
+        requestedBy:
+          type: string
+        target:
+          $ref: "#/components/schemas/AdaptiveSamplingTargetRecord"
+      additionalProperties: false
+    SequencingRunRecord:
+      type: object
+      required: [runId, caseId, sampleId, platform, status, createdAt, updatedAt]
+      properties:
+        runId:
+          type: string
+        caseId:
+          type: string
+        sampleId:
+          type: string
+        platform:
+          type: string
+        referenceBundleId:
+          type: string
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        telemetry:
+          $ref: "#/components/schemas/SequencingRunTelemetrySnapshot"
+        adaptiveSamplingSession:
+          $ref: "#/components/schemas/AdaptiveSamplingSessionRecord"
+      additionalProperties: false
+    WorkflowDispatchRecord:
+      type: object
+      required:
+        - dispatchId
+        - caseId
+        - requestId
+        - workflowName
+        - referenceBundleId
+        - executionProfile
+        - requestedAt
+        - status
+      properties:
+        dispatchId:
+          type: string
+        caseId:
+          type: string
+        requestId:
+          type: string
+        workflowName:
+          type: string
+        referenceBundleId:
+          type: string
+        executionProfile:
+          type: string
+        requestedBy:
+          type: string
+        requestedAt:
+          type: string
+          format: date-time
+        idempotencyKey:
+          type: string
+        correlationId:
+          type: string
+        status:
+          type: string
+          const: PENDING
+      additionalProperties: false
+    AnalysisWorkflowTerminalMetadata:
+      type: object
+      required: [backend]
+      properties:
+        backend:
+          type: string
+          enum: [IN_MEMORY, FILE_BACKED, NEXTFLOW]
+        nextflowSessionId:
+          type: string
+        nextflowRunName:
+          type: string
+        launchDir:
+          type: string
+        workDir:
+          type: string
+      additionalProperties: false
+    AnalysisWorkflowRunRecord:
+      type: object
+      required:
+        - runId
+        - caseId
+        - requestId
+        - workflowName
+        - referenceBundleId
+        - executionProfile
+        - status
+        - acceptedAt
+      properties:
+        runId:
+          type: string
+        caseId:
+          type: string
+        requestId:
+          type: string
+        workflowName:
+          type: string
+        referenceBundleId:
+          type: string
+        executionProfile:
+          type: string
+        status:
+          type: string
+        acceptedAt:
+          type: string
+          format: date-time
+        startedAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+        failureReason:
+          type: string
+        failureCategory:
+          type: string
+        terminalMetadata:
+          $ref: "#/components/schemas/AnalysisWorkflowTerminalMetadata"
+      additionalProperties: false
+    ArtifactManifestRecord:
+      type: object
+      required: [artifactId, caseId, kind, uri, checksum, createdAt]
+      properties:
+        artifactId:
+          type: string
+        caseId:
+          type: string
+        runId:
+          type: string
+        sampleId:
+          type: string
+        kind:
+          type: string
+        uri:
+          type: string
+        checksum:
+          type: string
+          pattern: ^sha256:[a-f0-9]{64}$
+        createdAt:
+          type: string
+          format: date-time
+      additionalProperties: false
+    HomeGenomeAuditEventRecord:
+      type: object
+      required: [aggregateId, type, occurredAt, detail, version]
+      properties:
+        aggregateId:
+          type: string
+        type:
+          type: string
+        occurredAt:
+          type: string
+          format: date-time
+        correlationId:
+          type: string
+        detail:
+          type: object
+          additionalProperties: true
+        version:
+          type: integer
+      additionalProperties: false
     HomeGenomeCaseSnapshot:
       type: object
       required:
@@ -79,59 +350,97 @@ components:
         - events
       properties:
         caseRecord:
-          type: object
-          additionalProperties: true
+          $ref: "#/components/schemas/HomeGenomeCaseRecord"
         samples:
           type: array
           items:
-            type: object
-            additionalProperties: true
+            $ref: "#/components/schemas/BiosampleRecord"
         runs:
           type: array
           items:
-            type: object
-            additionalProperties: true
+            $ref: "#/components/schemas/SequencingRunRecord"
         workflowDispatches:
           type: array
           items:
-            type: object
-            additionalProperties: true
+            $ref: "#/components/schemas/WorkflowDispatchRecord"
         workflowRuns:
           type: array
           items:
-            type: object
-            additionalProperties: true
+            $ref: "#/components/schemas/AnalysisWorkflowRunRecord"
         artifacts:
           type: array
           items:
-            type: object
-            additionalProperties: true
+            $ref: "#/components/schemas/ArtifactManifestRecord"
         events:
           type: array
           items:
-            type: object
-            additionalProperties: true
+            $ref: "#/components/schemas/HomeGenomeAuditEventRecord"
+      additionalProperties: false
+    CaseBundleDrsChecksum:
+      type: object
+      required: [checksum, type]
+      properties:
+        checksum:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        type:
+          type: string
+          const: sha-256
+      additionalProperties: false
+    CaseBundleDrsAccessUrl:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+          format: uri
+      additionalProperties: false
+    CaseBundleDrsAccessMethod:
+      type: object
+      required: [type, accessUrl]
+      properties:
+        type:
+          type: string
+          const: file
+        accessUrl:
+          $ref: "#/components/schemas/CaseBundleDrsAccessUrl"
       additionalProperties: false
     CaseBundleDrsObject:
       type: object
       required:
-        - objectId
-        - uri
+        - id
+        - selfUri
         - sourceUri
-        - checksum
-        - mediaType
+        - name
+        - createdTime
+        - mimeType
+        - checksums
+        - accessMethods
       properties:
-        objectId:
+        id:
           type: string
-        uri:
+        selfUri:
           type: string
+          format: uri
         sourceUri:
           type: string
-        checksum:
+        name:
           type: string
-          pattern: ^sha256:[a-f0-9]{64}$
-        mediaType:
+        createdTime:
           type: string
+          format: date-time
+        mimeType:
+          type: string
+        checksums:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/CaseBundleDrsChecksum"
+        accessMethods:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/CaseBundleDrsAccessMethod"
       additionalProperties: false
     WorkflowRunExportBundleRecord:
       type: object
@@ -201,8 +510,7 @@ components:
             "@graph":
               type: array
               items:
-                type: object
-                additionalProperties: true
+                $ref: "#/components/schemas/RoCrateGraphEntry"
           additionalProperties: false
         workflowRunCrates:
           type: array
@@ -219,24 +527,52 @@ components:
             - entity
             - activity
             - agent
+            - wasGeneratedBy
+            - used
+            - wasAssociatedWith
             - wasDerivedFrom
-            - generatedAt
           properties:
             "@context":
               type: string
             entity:
-              type: string
+              type: object
+              additionalProperties:
+                type: object
+                additionalProperties: true
             activity:
-              type: string
+              type: object
+              additionalProperties:
+                type: object
+                additionalProperties: true
             agent:
-              type: string
+              type: object
+              additionalProperties:
+                type: object
+                additionalProperties: true
+            wasGeneratedBy:
+              type: object
+              additionalProperties:
+                type: object
+                additionalProperties:
+                  type: string
+            used:
+              type: object
+              additionalProperties:
+                type: object
+                additionalProperties:
+                  type: string
+            wasAssociatedWith:
+              type: object
+              additionalProperties:
+                type: object
+                additionalProperties:
+                  type: string
             wasDerivedFrom:
-              type: array
-              items:
-                type: string
-            generatedAt:
-              type: string
-              format: date-time
+              type: object
+              additionalProperties:
+                type: object
+                additionalProperties:
+                  type: string
           additionalProperties: false
         snapshot:
           $ref: "#/components/schemas/HomeGenomeCaseSnapshot"

@@ -18,6 +18,8 @@ const WORKFLOW_SIGNAL_CHECKSUM =
   "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 const EXPORT_SIGNAL_CHECKSUM =
   "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
+const EXPORT_SIGNAL_DRS_ID =
+  "sha256-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
 
 function createMinKnowClientStub(): IMinKnowClient {
   return {
@@ -536,11 +538,18 @@ test("control plane exports a case bundle with RO-Crate, PROV, and DRS reference
   assert.equal(bundle.workflowRunCrates.length, 1);
   assert.equal(bundle.workflowRunCrates[0].runId, "analysis-run-export-001");
   assert.equal(bundle.drsObjects.length, 1);
-  assert.equal(bundle.drsObjects[0].objectId, EXPORT_SIGNAL_CHECKSUM);
-  assert.equal(
-    bundle.drsObjects[0].uri,
-    "drs://homegenome/sha256%3Acccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
-  );
+  assert.equal(bundle.drsObjects[0].id, EXPORT_SIGNAL_DRS_ID);
+  assert.equal(bundle.drsObjects[0].selfUri.includes("drs://"), true);
+  assert.equal(bundle.drsObjects[0].checksums[0].type, "sha-256");
+  assert.equal(bundle.drsObjects[0].checksums[0].checksum, EXPORT_SIGNAL_CHECKSUM.replace("sha256:", ""));
+  assert.equal(bundle.drsObjects[0].accessMethods[0].type, "file");
+  const metadataDescriptor = bundle.roCrateMetadata["@graph"][0] as Record<string, unknown>;
+  const conformsTo = metadataDescriptor.conformsTo as Record<string, string>;
+  assert.equal(conformsTo["@id"], "https://w3id.org/ro/crate/1.1");
+  assert.equal(typeof bundle.prov.entity, "object");
+  assert.equal(typeof bundle.prov.wasGeneratedBy, "object");
+  assert.equal(typeof bundle.prov.used, "object");
+  assert.equal(typeof bundle.prov.wasAssociatedWith, "object");
 
   t.assert.fileSnapshot(
     bundle,

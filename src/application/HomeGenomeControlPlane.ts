@@ -1,4 +1,8 @@
 import {
+  createHash,
+} from "node:crypto";
+import path from "node:path";
+import {
   AdaptiveSamplingTargetFormat,
   AnalysisWorkflowFailureCategory,
   AnalysisWorkflowRunRecord,
@@ -122,11 +126,22 @@ export interface ExportCaseBundleInput {
 }
 
 export interface CaseBundleDrsObject {
-  objectId: string;
-  uri: string;
+  id: string;
+  selfUri: string;
   sourceUri: string;
-  checksum: string;
-  mediaType: string;
+  name: string;
+  createdTime: string;
+  mimeType: string;
+  checksums: ReadonlyArray<{
+    checksum: string;
+    type: "sha-256";
+  }>;
+  accessMethods: ReadonlyArray<{
+    type: "file";
+    accessUrl: {
+      url: string;
+    };
+  }>;
 }
 
 export interface WorkflowRunExportBundleRecord {
@@ -155,11 +170,13 @@ export interface CaseExportBundle {
   drsObjects: ReadonlyArray<CaseBundleDrsObject>;
   prov: {
     "@context": "https://www.w3.org/ns/prov#";
-    entity: string;
-    activity: string;
-    agent: string;
-    wasDerivedFrom: ReadonlyArray<string>;
-    generatedAt: string;
+    entity: Record<string, Record<string, unknown>>;
+    activity: Record<string, Record<string, unknown>>;
+    agent: Record<string, Record<string, unknown>>;
+    wasGeneratedBy: Record<string, Record<string, string>>;
+    used: Record<string, Record<string, string>>;
+    wasAssociatedWith: Record<string, Record<string, string>>;
+    wasDerivedFrom: Record<string, Record<string, string>>;
   };
   snapshot: HomeGenomeCaseSnapshot;
 }
@@ -389,7 +406,9 @@ export class HomeGenomeControlPlane {
       await this.deps.minKnowClient.applyAdaptiveSamplingTarget({
         runId: input.runId,
         label: input.label,
-        targetDefinitionUri: input.targetDefinitionUri,
+        targetDefinitionUri: this.normalizeLocalTargetDefinitionUri(
+          input.targetDefinitionUri,
+        ),
         format: input.format,
         appliedAt: normalizeTimestamp(input.occurredAt),
         requestedBy: input.requestedBy,
@@ -596,6 +615,7 @@ export class HomeGenomeControlPlane {
       `urn:homegenome:activity:bundle-export:${snapshot.caseRecord.caseId}:${generatedAt}`;
     const exportAgentId =
       `urn:homegenome:agent:${encodeURIComponent(generatedBy)}`;
+    const bundleEntityId = `urn:homegenome:bundle:${bundleId}`;
 
     const drsObjects = snapshot.artifacts.map((artifact) =>
       this.toDrsObject(artifact),
@@ -617,6 +637,9 @@ export class HomeGenomeControlPlane {
       {
         "@id": "ro-crate-metadata.jsonld",
         "@type": "CreativeWork",
+        conformsTo: {
+          "@id": "https://w3id.org/ro/crate/1.1",
+        },
         about: {
           "@id": "./",
         },
@@ -627,6 +650,9 @@ export class HomeGenomeControlPlane {
         name: `HomeGenome Case Bundle ${snapshot.caseRecord.caseId}`,
         identifier: bundleId,
         dateCreated: generatedAt,
+        license: {
+          "@id": "https://spdx.org/licenses/MIT.html",
+        },
         creator: {
           "@id": exportAgentId,
         },
@@ -644,7 +670,9 @@ export class HomeGenomeControlPlane {
       },
       {
         "@id": exportAgentId,
-        "@type": "Person",
+        "@type": generatedBy === "homegenome-control-plane"
+          ? "SoftwareApplication"
+          : "Person",
         name: generatedBy,
       },
     ];
@@ -655,12 +683,47 @@ export class HomeGenomeControlPlane {
         "@id": artifact.uri,
         "@type": "File",
         name: artifact.artifactId,
-        identifier: drsObject.uri,
-        encodingFormat: artifact.kind,
+        identifier: drsObject.selfUri,
+        encodingFormat: drsObject.mimeType,
+        contentSize: artifact.uri.length,
         dateCreated: artifact.createdAt,
-        checksum: artifact.checksum,
+        checksum: drsObject.checksums[0].checksum,
       });
     }
+
+    const usedRelations = Object.fromEntries(
+      [caseEntityId, ...snapshot.artifacts.map((artifact) => `urn:homegenome:artifact:${artifact.artifactId}`)].map(
+        (entityId, index) => [
+          `_:used-${index + 1}`,
+          {
+            "prov:activity": exportActivityId,
+            "prov:entity": entityId,
+          },
+        ],
+      ),
+    );
+
+    const derivedRelations = Object.fromEntries(
+      [caseEntityId, ...snapshot.artifacts.map((artifact) => `urn:homegenome:artifact:${artifact.artifactId}`)].map(
+        (entityId, index) => [
+          `_:derived-${index + 1}`,
+          {
+            "prov:generatedEntity": bundleEntityId,
+            "prov:usedEntity": entityId,
+          },
+        ],
+      ),
+    );
+
+    const artifactEntities = Object.fromEntries(
+      snapshot.artifacts.map((artifact) => [
+        `urn:homegenome:artifact:${artifact.artifactId}`,
+        {
+          "prov:type": "prov:Entity",
+          "prov:label": artifact.artifactId,
+        },
+      ]),
+    );
 
     return {
       schemaVersion: "1.0.0",
@@ -676,14 +739,47 @@ export class HomeGenomeControlPlane {
       drsObjects,
       prov: {
         "@context": "https://www.w3.org/ns/prov#",
-        entity: caseEntityId,
-        activity: exportActivityId,
-        agent: exportAgentId,
-        wasDerivedFrom: snapshot.events.map(
-          (event) =>
-            `urn:homegenome:event:${snapshot.caseRecord.caseId}:${event.version}`,
-        ),
-        generatedAt,
+        entity: {
+          [caseEntityId]: {
+            "prov:type": "prov:Entity",
+            "prov:label": `HomeGenome Case ${snapshot.caseRecord.caseId}`,
+          },
+          [bundleEntityId]: {
+            "prov:type": "prov:Entity",
+            "prov:label": `HomeGenome Export Bundle ${bundleId}`,
+          },
+          ...artifactEntities,
+        },
+        activity: {
+          [exportActivityId]: {
+            "prov:type": "prov:Activity",
+            "prov:startedAtTime": generatedAt,
+            "prov:endedAtTime": generatedAt,
+          },
+        },
+        agent: {
+          [exportAgentId]: {
+            "prov:type": generatedBy === "homegenome-control-plane"
+              ? "prov:SoftwareAgent"
+              : "prov:Person",
+            "prov:label": generatedBy,
+          },
+        },
+        wasGeneratedBy: {
+          "_:generated-1": {
+            "prov:entity": bundleEntityId,
+            "prov:activity": exportActivityId,
+            "prov:time": generatedAt,
+          },
+        },
+        used: usedRelations,
+        wasAssociatedWith: {
+          "_:associated-1": {
+            "prov:activity": exportActivityId,
+            "prov:agent": exportAgentId,
+          },
+        },
+        wasDerivedFrom: derivedRelations,
       },
       snapshot,
     };
@@ -744,13 +840,29 @@ export class HomeGenomeControlPlane {
   private toDrsObject(artifact: ArtifactManifestRecord): CaseBundleDrsObject {
     const checksum = normalizeSha256Checksum(artifact.checksum);
     const objectId = this.normalizeDrsObjectIdFromChecksum(checksum);
+    const checksumHex = checksum.replace(/^sha256:/i, "");
 
     return {
-      objectId,
-      uri: `drs://homegenome/${encodeURIComponent(objectId)}`,
+      id: objectId,
+      selfUri: `drs://homegenome.local/${encodeURIComponent(objectId)}`,
       sourceUri: artifact.uri,
-      checksum,
-      mediaType: artifact.kind,
+      name: artifact.artifactId,
+      createdTime: artifact.createdAt,
+      mimeType: this.toMimeType(artifact.kind),
+      checksums: [
+        {
+          checksum: checksumHex,
+          type: "sha-256",
+        },
+      ],
+      accessMethods: [
+        {
+          type: "file",
+          accessUrl: {
+            url: this.toLocalFileAccessUrl(artifact.uri),
+          },
+        },
+      ],
     };
   }
 
@@ -758,11 +870,72 @@ export class HomeGenomeControlPlane {
     const normalized = checksum.trim();
 
     if (!normalized) {
-      return "artifact:unknown";
+      return "artifact-unknown";
     }
 
-    return /^sha256:/i.test(normalized)
-      ? `sha256:${normalized.replace(/^sha256:/i, "")}`
-      : normalized;
+    if (/^sha256:/i.test(normalized)) {
+      return `sha256-${normalized.replace(/^sha256:/i, "")}`;
+    }
+
+    return normalized.replace(/[^A-Za-z0-9._~-]/g, "-");
+  }
+
+  private normalizeLocalTargetDefinitionUri(targetDefinitionUri: string): string {
+    const normalized = targetDefinitionUri.trim();
+
+    if (!normalized) {
+      throw new Error(
+        "Adaptive sampling targetDefinitionUri must reference a local file surface",
+      );
+    }
+
+    const looksLikeWindowsDrivePath = /^[A-Za-z]:[\\/]/.test(normalized);
+    const schemeMatch = normalized.match(/^([A-Za-z][A-Za-z0-9+.-]*):/);
+
+    if (schemeMatch && !looksLikeWindowsDrivePath) {
+      const scheme = schemeMatch[1].toLowerCase();
+
+      if (scheme !== "file") {
+        throw new Error(
+          "Adaptive sampling targetDefinitionUri must reference a local file surface",
+        );
+      }
+
+      const parsed = new URL(normalized);
+
+      if (parsed.host && parsed.host !== "localhost") {
+        throw new Error(
+          "Adaptive sampling targetDefinitionUri must reference a local file surface",
+        );
+      }
+
+      return normalized;
+    }
+
+    if (/^[A-Za-z][A-Za-z0-9+.-]*:\/\//.test(normalized)) {
+      throw new Error(
+        "Adaptive sampling targetDefinitionUri must reference a local file surface",
+      );
+    }
+
+    return normalized.replace(/\\/g, "/");
+  }
+
+  private toLocalFileAccessUrl(sourceUri: string): string {
+    const normalizedPath = sourceUri.replace(/\\/g, "/");
+    return new URL(path.posix.join("/", normalizedPath), "file:///").toString();
+  }
+
+  private toMimeType(kind: ArtifactManifestRecord["kind"]): string {
+    switch (kind) {
+      case "RAW_SIGNAL":
+        return "application/vnd.ont.pod5";
+      case "QC_REPORT":
+        return "text/plain";
+      case "INTERPRETATION_REPORT":
+        return "text/markdown";
+      default:
+        return "application/octet-stream";
+    }
   }
 }

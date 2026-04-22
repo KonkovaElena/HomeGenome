@@ -190,6 +190,24 @@ test("control plane rejects workflow requests before QC passes", async () => {
   );
 });
 
+test("control plane rejects adaptive sampling target URIs outside local file surfaces", async () => {
+  const controlPlane = createControlPlane();
+
+  await prepareQcPassedCase(controlPlane, "case-adaptive-uri-001");
+
+  await assert.rejects(
+    () =>
+      controlPlane.applyAdaptiveSamplingTarget({
+        runId: "case-adaptive-uri-001-sequencing-run",
+        label: "oncology-panel",
+        targetDefinitionUri: "https://attacker.example/panel.bed",
+        format: "BED",
+        occurredAt: "2026-04-22T11:00:00.000Z",
+      }),
+    /local file/i,
+  );
+});
+
 test("workflow dispatch sink is idempotent for matching replay and rejects mismatches", async () => {
   const sink = new InMemoryWorkflowDispatchSink();
 

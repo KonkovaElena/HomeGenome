@@ -233,7 +233,7 @@ export interface RequestAnalysisWorkflowInput {
 }
 
 export interface AnalysisWorkflowTerminalMetadata {
-  backend: "IN_MEMORY" | "NEXTFLOW";
+  backend: "IN_MEMORY" | "FILE_BACKED" | "NEXTFLOW";
   nextflowSessionId?: string;
   nextflowRunName?: string;
   launchDir?: string;

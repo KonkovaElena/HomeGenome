@@ -69,7 +69,7 @@ export class FileBackedAnalysisWorkflowRunner
           acceptedAt: now,
           startedAt: now,
           terminalMetadata: {
-            backend: "IN_MEMORY",
+            backend: "FILE_BACKED",
           },
         };
 
