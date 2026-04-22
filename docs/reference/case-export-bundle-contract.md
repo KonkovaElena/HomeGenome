@@ -93,6 +93,7 @@ Behavioral trap for this contract:
 Stability rail:
 
 - the same test also uses a checked-in golden file snapshot for the exported bundle payload.
+- `npm run verify:contracts` checks that the TypeScript contract, OpenAPI surface, and JSON Schema stay aligned.
 
 ## Non-Goals (Current)
 

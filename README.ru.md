@@ -35,6 +35,8 @@ HomeGenome — локальный genomics research repository про air-gapped
 
 ```bash
 npm install
+npm run typecheck
+npm run verify:contracts
 npm test
 npm run test:coverage
 npm run build

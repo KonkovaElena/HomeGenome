@@ -37,7 +37,7 @@ It separates:
 | Workflow run provenance | Workflow-run crate projection | `implemented` | `workflowRunCrates[]` emitted per workflow run in bundle export. |
 | Reproducible orchestration | Nextflow runner seam | `implemented` | `IAnalysisWorkflowRunner` + `NextflowWorkflowRunner` already in baseline. |
 | Telemetry control | MinKNOW telemetry/adaptive sampling seam | `implemented` | `IMinKnowClient` + control-plane methods are wired and tested. |
-| Quality verification | Built-in Node coverage thresholds + file snapshot rail | `implemented` | `test:coverage` and checked-in export bundle snapshot guard contract drift. |
+| Quality verification | Built-in Node coverage thresholds + contract drift rail | `implemented` | `test:coverage`, checked-in export bundle snapshot, and `verify:contracts` guard schema/API drift. |
 | Data API interoperability | GA4GH DRS API server | `planned` | Current layer is DRS-like contract; full DRS REST surface is not implemented. |
 | Workflow API interoperability | GA4GH WES/TES contracts | `planned` | Current layer uses internal runner/sink contracts with similar intent. |
 | Tool registry interoperability | GA4GH TRS | `planned` | No TRS endpoint yet; reference bundle registry is local-only. |
