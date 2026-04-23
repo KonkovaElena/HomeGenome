@@ -164,6 +164,44 @@ test("file-backed sample registry persists cases and samples across adapter inst
   assert.equal(samples[0].sampleId, "sample-file-010");
 });
 
+test("file-backed sample registry rejects stale compare-and-swap status writes", async () => {
+  const tempDir = await createTempDir();
+  const filePath = path.join(tempDir, "samples-cas.json");
+  const registry = new FileBackedSampleRegistry(filePath);
+  const registryWithCas = registry as unknown as {
+    updateCaseStatus(
+      caseId: string,
+      status: string,
+      updatedAt: string,
+      expectedCurrentStatus?: string,
+    ): Promise<{ status: string }>;
+  };
+
+  await registry.createCase({
+    caseId: "case-file-cas-001",
+    subjectId: "subject-file-cas-001",
+    createdAt: "2026-04-23T12:20:00.000Z",
+  });
+
+  await registryWithCas.updateCaseStatus(
+    "case-file-cas-001",
+    "BIOSAMPLE_REGISTERED",
+    "2026-04-23T12:21:00.000Z",
+    "INTAKE_PENDING",
+  );
+
+  await assert.rejects(
+    () =>
+      registryWithCas.updateCaseStatus(
+        "case-file-cas-001",
+        "SEQUENCING_REQUESTED",
+        "2026-04-23T12:22:00.000Z",
+        "INTAKE_PENDING",
+      ),
+    /stale case status/i,
+  );
+});
+
 test("file-backed sequencing run catalog persists runtime state across adapter instances", async () => {
   const tempDir = await createTempDir();
   const filePath = path.join(tempDir, "runs-catalog.json");

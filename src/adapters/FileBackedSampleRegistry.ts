@@ -64,6 +64,7 @@ export class FileBackedSampleRegistry implements ISampleRegistry {
     caseId: string,
     status: HomeGenomeCaseStatus,
     updatedAt: string,
+    expectedCurrentStatus?: HomeGenomeCaseStatus,
   ): Promise<HomeGenomeCaseRecord> {
     const nextWrite = this.writeChain.then(() =>
       withFileLock(this.filePath, async () => {
@@ -72,6 +73,15 @@ export class FileBackedSampleRegistry implements ISampleRegistry {
 
         if (!current) {
           throw new Error(`Unknown case: ${caseId}`);
+        }
+
+        if (
+          expectedCurrentStatus !== undefined &&
+          current.status !== expectedCurrentStatus
+        ) {
+          throw new Error(
+            `Stale case status update for ${caseId}: expected ${expectedCurrentStatus}, got ${current.status}`,
+          );
         }
 
         const next: HomeGenomeCaseRecord = {

@@ -15,6 +15,7 @@ export interface ISampleRegistry {
     caseId: string,
     status: HomeGenomeCaseStatus,
     updatedAt: string,
+    expectedCurrentStatus?: HomeGenomeCaseStatus,
   ): Promise<HomeGenomeCaseRecord>;
 
   registerSample(input: RegisterBiosampleInput): Promise<BiosampleRecord>;

@@ -39,11 +39,21 @@ export class InMemorySampleRegistry implements ISampleRegistry {
     caseId: string,
     status: HomeGenomeCaseStatus,
     updatedAt: string,
+    expectedCurrentStatus?: HomeGenomeCaseStatus,
   ): Promise<HomeGenomeCaseRecord> {
     const current = this.cases.get(caseId);
 
     if (!current) {
       throw new Error(`Unknown case: ${caseId}`);
+    }
+
+    if (
+      expectedCurrentStatus !== undefined &&
+      current.status !== expectedCurrentStatus
+    ) {
+      throw new Error(
+        `Stale case status update for ${caseId}: expected ${expectedCurrentStatus}, got ${current.status}`,
+      );
     }
 
     const next: HomeGenomeCaseRecord = {

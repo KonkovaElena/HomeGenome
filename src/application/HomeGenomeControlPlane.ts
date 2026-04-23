@@ -576,6 +576,7 @@ export class HomeGenomeControlPlane {
       input.caseId,
       input.nextStatus,
       normalizeTimestamp(input.occurredAt),
+      current.status,
     );
 
     await this.appendCaseEvent(input.caseId, "CASE_STATUS_TRANSITIONED", input.occurredAt, input.correlationId, {

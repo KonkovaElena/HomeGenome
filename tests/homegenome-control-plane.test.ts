@@ -10,6 +10,8 @@ import { InMemorySampleRegistry } from "../src/adapters/InMemorySampleRegistry";
 import { InMemorySequencingRunCatalog } from "../src/adapters/InMemorySequencingRunCatalog";
 import { InMemoryStateMachineGuard } from "../src/adapters/InMemoryStateMachineGuard";
 import { InMemoryWorkflowDispatchSink } from "../src/adapters/InMemoryWorkflowDispatchSink";
+import { HomeGenomeCaseRecord } from "../src/domain/homeGenome";
+import { ISampleRegistry } from "../src/ports/ISampleRegistry";
 import { IMinKnowClient } from "../src/ports/IMinKnowClient";
 
 const RAW_SIGNAL_CHECKSUM =
@@ -62,6 +64,15 @@ function createControlPlane(
     minKnowClient,
   });
 }
+
+type SampleRegistryCompareAndSwapFacade = {
+  updateCaseStatus(
+    caseId: string,
+    status: string,
+    updatedAt: string,
+    expectedCurrentStatus?: string,
+  ): Promise<{ status: string }>;
+};
 
 test("control plane tracks a minimal HomeGenome case lifecycle", async () => {
   const controlPlane = createControlPlane();
@@ -248,6 +259,111 @@ test("control plane rejects duplicate case identifiers", async () => {
         createdAt: "2026-04-21T11:11:00.000Z",
       }),
     /Case already exists/i,
+  );
+});
+
+test("in-memory sample registry rejects stale compare-and-swap status writes", async () => {
+  const registry = new InMemorySampleRegistry();
+  const registryWithCas =
+    registry as unknown as SampleRegistryCompareAndSwapFacade;
+
+  await registry.createCase({
+    caseId: "case-cas-memory-001",
+    subjectId: "subject-cas-memory-001",
+    createdAt: "2026-04-23T12:00:00.000Z",
+  });
+
+  await registryWithCas.updateCaseStatus(
+    "case-cas-memory-001",
+    "BIOSAMPLE_REGISTERED",
+    "2026-04-23T12:01:00.000Z",
+    "INTAKE_PENDING",
+  );
+
+  await assert.rejects(
+    () =>
+      registryWithCas.updateCaseStatus(
+        "case-cas-memory-001",
+        "SEQUENCING_REQUESTED",
+        "2026-04-23T12:02:00.000Z",
+        "INTAKE_PENDING",
+      ),
+    /stale case status/i,
+  );
+});
+
+test("control plane rejects stale case status transitions when state changes between read and write", async () => {
+  let caseRecord: HomeGenomeCaseRecord = {
+    caseId: "case-cas-control-plane-001",
+    subjectId: "subject-cas-control-plane-001",
+    status: "RAW_ARTIFACTS_CAPTURED",
+    createdAt: "2026-04-23T12:10:00.000Z",
+    updatedAt: "2026-04-23T12:10:00.000Z",
+  };
+
+  const sampleRegistry: ISampleRegistry = {
+    async createCase() {
+      throw new Error("not implemented");
+    },
+    async getCase(caseId) {
+      return caseId === caseRecord.caseId ? { ...caseRecord } : undefined;
+    },
+    async updateCaseStatus(caseId, status, updatedAt, expectedCurrentStatus) {
+      if (caseId !== caseRecord.caseId) {
+        throw new Error(`Unknown case: ${caseId}`);
+      }
+
+      caseRecord = {
+        ...caseRecord,
+        status: "QC_PENDING",
+        updatedAt,
+      };
+
+      if (
+        expectedCurrentStatus !== undefined &&
+        caseRecord.status !== expectedCurrentStatus
+      ) {
+        throw new Error(
+          `Stale case status update for ${caseId}: expected ${expectedCurrentStatus}, got ${caseRecord.status}`,
+        );
+      }
+
+      caseRecord = {
+        ...caseRecord,
+        status,
+        updatedAt,
+      };
+
+      return { ...caseRecord };
+    },
+    async registerSample() {
+      throw new Error("not implemented");
+    },
+    async listSamples() {
+      return [];
+    },
+  };
+
+  const controlPlane = new HomeGenomeControlPlane({
+    sampleRegistry,
+    sequencingRunCatalog: new InMemorySequencingRunCatalog(),
+    artifactStore: new InMemoryArtifactStore(),
+    referenceBundleRegistry: new InMemoryReferenceBundleRegistry(),
+    workflowDispatchSink: new InMemoryWorkflowDispatchSink(),
+    analysisWorkflowRunner: new InMemoryAnalysisWorkflowRunner(),
+    eventStore: new InMemoryEventStore(),
+    stateMachineGuard: new InMemoryStateMachineGuard(),
+    minKnowClient: createMinKnowClientStub(),
+  });
+
+  await assert.rejects(
+    () =>
+      controlPlane.transitionCaseStatus({
+        caseId: "case-cas-control-plane-001",
+        nextStatus: "QC_PENDING",
+        occurredAt: "2026-04-23T12:11:00.000Z",
+      }),
+    /stale case status/i,
   );
 });
 
