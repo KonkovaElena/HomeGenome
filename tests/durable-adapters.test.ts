@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp } from "node:fs/promises";
+import { mkdtemp, utimes, writeFile } from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
 import {
@@ -225,4 +225,33 @@ test("file-backed artifact and reference registries persist across adapter insta
 
   assert.equal(artifact?.artifactId, "artifact-file-030");
   assert.equal(bundle?.bundleId, "bundle-file-030");
+});
+
+test("file-backed event store recovers from a stale orphaned lock file", async () => {
+  const tempDir = await createTempDir();
+  const filePath = path.join(tempDir, "events-stale-lock.json");
+  const lockPath = `${filePath}.lock`;
+  const staleDate = new Date("2026-04-20T10:00:00.000Z");
+
+  await writeFile(
+    lockPath,
+    JSON.stringify({ pid: 999999, acquiredAt: staleDate.toISOString() }),
+    "utf8",
+  );
+  await utimes(lockPath, staleDate, staleDate);
+
+  const store = new FileBackedEventStore<TestEventInput>(filePath);
+  await store.append("case-file-stale-lock-001", 0, [
+    {
+      aggregateId: "case-file-stale-lock-001",
+      type: "CASE_CREATED",
+      occurredAt: "2026-04-23T10:00:00.000Z",
+      detail: { recovered: true },
+    },
+  ]);
+
+  const events = await store.listByAggregateId("case-file-stale-lock-001");
+
+  assert.equal(events.length, 1);
+  assert.deepEqual(events[0].detail, { recovered: true });
 });

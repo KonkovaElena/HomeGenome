@@ -3,6 +3,12 @@ import path from "node:path";
 
 const FILE_LOCK_TIMEOUT_MS = 2_000;
 const FILE_LOCK_RETRY_DELAY_MS = 25;
+const FILE_LOCK_STALE_MS = 30_000;
+
+type FileLockRecord = {
+  pid: number;
+  acquiredAt: string;
+};
 
 async function ensureStoreFile(
   filePath: string,
@@ -74,11 +80,23 @@ export async function withFileLock<T>(
   while (!handle) {
     try {
       handle = await fs.open(lockPath, "wx");
+      await handle.writeFile(
+        `${JSON.stringify({
+          pid: process.pid,
+          acquiredAt: new Date().toISOString(),
+        } satisfies FileLockRecord)}\n`,
+        "utf8",
+      );
     } catch (error) {
       const nodeError = error as NodeJS.ErrnoException;
 
       if (nodeError.code !== "EEXIST") {
         throw error;
+      }
+
+      if (await shouldRecoverStaleLock(lockPath)) {
+        await fs.rm(lockPath, { force: true });
+        continue;
       }
 
       if (Date.now() >= deadline) {
@@ -101,4 +119,67 @@ export async function withFileLock<T>(
 
 export function defaultStatePath(fileName: string): string {
   return path.resolve(process.cwd(), "state", fileName);
+}
+
+async function shouldRecoverStaleLock(lockPath: string): Promise<boolean> {
+  try {
+    const [raw, stats] = await Promise.all([
+      fs.readFile(lockPath, "utf8"),
+      fs.stat(lockPath),
+    ]);
+
+    const lockAgeMs = Date.now() - stats.mtimeMs;
+    const record = parseFileLockRecord(raw);
+
+    if (!record) {
+      return lockAgeMs >= FILE_LOCK_STALE_MS;
+    }
+
+    return !isProcessAlive(record.pid);
+  } catch (error) {
+    const nodeError = error as NodeJS.ErrnoException;
+
+    if (nodeError.code === "ENOENT") {
+      return false;
+    }
+
+    throw error;
+  }
+}
+
+function parseFileLockRecord(raw: string): FileLockRecord | undefined {
+  try {
+    const parsed = JSON.parse(raw) as Partial<FileLockRecord>;
+
+    if (
+      typeof parsed.pid === "number" &&
+      Number.isInteger(parsed.pid) &&
+      typeof parsed.acquiredAt === "string" &&
+      parsed.acquiredAt.length > 0
+    ) {
+      return {
+        pid: parsed.pid,
+        acquiredAt: parsed.acquiredAt,
+      };
+    }
+  } catch {
+    return undefined;
+  }
+
+  return undefined;
+}
+
+function isProcessAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    const nodeError = error as NodeJS.ErrnoException;
+
+    if (nodeError.code === "ESRCH") {
+      return false;
+    }
+
+    return true;
+  }
 }
