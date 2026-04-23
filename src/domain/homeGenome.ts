@@ -198,6 +198,64 @@ export const DEFAULT_HOME_GENOME_QC_THRESHOLDS: HomeGenomeQcThresholds = {
   requiredArtifactKinds: ["RAW_SIGNAL"],
 };
 
+export interface VariantConsensusCall {
+  caller: string;
+  locus: string;
+  allele: string;
+  confidence?: number;
+}
+
+export interface HlaTypingConsensusCall {
+  caller: string;
+  gene: string;
+  alleles: ReadonlyArray<string>;
+  confidence?: number;
+}
+
+export interface VariantConsensusThresholds {
+  minimumSupportingCallers: number;
+  minimumConcordanceRatio: number;
+}
+
+export interface HlaTypingConsensusThresholds {
+  minimumSupportingCallers: number;
+  minimumConcordanceRatio: number;
+}
+
+export interface VariantConsensusDecision {
+  outcome: "CONSENSUS" | "MANUAL_REVIEW_REQUIRED";
+  evaluatedAt: string;
+  concordanceRatio: number;
+  minimumSupportingCallers: number;
+  minimumConcordanceRatio: number;
+  supportingCallers: ReadonlyArray<string>;
+  consensusKeys: ReadonlyArray<string>;
+  disagreementKeys: ReadonlyArray<string>;
+  notes: ReadonlyArray<string>;
+}
+
+export interface HlaTypingConsensusDecision {
+  outcome: "CONSENSUS" | "MANUAL_REVIEW_REQUIRED";
+  evaluatedAt: string;
+  concordanceRatio: number;
+  minimumSupportingCallers: number;
+  minimumConcordanceRatio: number;
+  supportingCallers: ReadonlyArray<string>;
+  consensusKeys: ReadonlyArray<string>;
+  disagreementKeys: ReadonlyArray<string>;
+  notes: ReadonlyArray<string>;
+}
+
+export const DEFAULT_VARIANT_CONSENSUS_THRESHOLDS: VariantConsensusThresholds = {
+  minimumSupportingCallers: 2,
+  minimumConcordanceRatio: 0.66,
+};
+
+export const DEFAULT_HLA_TYPING_CONSENSUS_THRESHOLDS: HlaTypingConsensusThresholds = {
+  minimumSupportingCallers: 2,
+  minimumConcordanceRatio: 0.66,
+};
+
 export interface ReferenceBundleRecord {
   bundleId: string;
   name: string;

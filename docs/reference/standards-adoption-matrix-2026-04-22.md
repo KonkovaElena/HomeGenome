@@ -39,12 +39,12 @@ It separates:
 | Telemetry control | MinKNOW telemetry/adaptive sampling seam | `implemented` | `IMinKnowClient` + control-plane methods are wired and tested. |
 | QC gating | Threshold-based QC pass/fail/manual-review gate | `implemented` | `IQcGateEvaluator`, `ThresholdQcGateEvaluator`, and `evaluateCaseQc()` now provide an explicit QC decision path. |
 | Quality verification | Built-in Node coverage thresholds + contract drift rail | `implemented` | `test:coverage`, checked-in export bundle snapshot, and `verify:contracts` guard schema/API drift. |
-| Variant review consensus | Multi-caller / multi-typer consensus thresholds | `planned` | `IVariantConsensusProvider` and `IHlaTypingConsensusProvider` remain the next evidence-layer extensions. |
+| Variant review consensus | Multi-caller / multi-typer consensus thresholds | `implemented` | `IVariantConsensusProvider`, `IHlaTypingConsensusProvider`, and `reviewCaseConsensus()` now gate the move from analysis completion into interpretation. |
 | Data API interoperability | GA4GH DRS API server | `planned` | Current layer is DRS-like contract; full DRS REST surface is not implemented. |
 | Workflow API interoperability | GA4GH WES/TES contracts | `planned` | Current layer uses internal runner/sink contracts with similar intent. |
 | Tool registry interoperability | GA4GH TRS | `planned` | No TRS endpoint yet; reference bundle registry is local-only. |
 | Variant portability | GA4GH VRS exports | `planned` | Current baseline tracks artifacts; no VRS serializer yet. |
-| Phenotype portability | Phenopackets export | `planned` | Intended for interoperability phase in roadmap. |
+| Phenotype portability | Phenopackets export | `in-progress` | `CaseExportBundle.phenopacket` now emits a Phenopackets-oriented v2-shaped projection; full normative parity is still future work. |
 | Supply-chain provenance | SLSA + in-toto attestations | `planned` | CI has baseline security checks; no artifact attestation pipeline yet. |
 | Artifact signing | Sigstore / cosign | `planned` | Not yet integrated into release flow. |
 | SBOM | SPDX / CycloneDX | `planned` | Not yet generated in HomeGenome release workflow. |
@@ -57,6 +57,7 @@ It separates:
 
 - Code: `src/application/HomeGenomeControlPlane.ts`
 - QC policy: `src/ports/IQcGateEvaluator.ts`, `src/adapters/ThresholdQcGateEvaluator.ts`
+- Consensus policy: `src/ports/IVariantConsensusProvider.ts`, `src/ports/IHlaTypingConsensusProvider.ts`, `src/adapters/ThresholdVariantConsensusProvider.ts`, `src/adapters/ThresholdHlaTypingConsensusProvider.ts`
 - Test trap: `tests/homegenome-control-plane.test.ts`
 - Contract: [case-export-bundle-contract.md](case-export-bundle-contract.md)
 - Schema: [schemas/case-export-bundle.schema.json](schemas/case-export-bundle.schema.json)

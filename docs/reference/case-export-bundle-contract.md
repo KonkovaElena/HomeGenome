@@ -1,8 +1,8 @@
 ---
 title: "HomeGenome Case Export Bundle Contract"
 status: "active"
-version: "1.0.0"
-last_updated: "2026-04-22"
+version: "1.1.0"
+last_updated: "2026-04-23"
 tags: [homegenome, export, provenance, ro-crate, prov, drs]
 mode: "reference"
 ---
@@ -17,13 +17,14 @@ It is designed as a practical local-first handoff unit with:
 
 - RO-Crate-compatible metadata envelope;
 - PROV-compatible provenance summary;
-- DRS-like artifact identifiers for stable object references.
+- DRS-like artifact identifiers for stable object references;
+- a Phenopackets-oriented projection that can evolve toward broader GA4GH portability without changing the rest of the bundle contract.
 
 The contract is implemented in:
 
 - `src/application/HomeGenomeControlPlane.ts` (`exportCaseBundle()`)
 
-## Contract Shape (v1.0.0)
+## Contract Shape (v1.1.0)
 
 Top-level fields:
 
@@ -32,6 +33,7 @@ Top-level fields:
 - `caseId`: HomeGenome case identifier
 - `generatedAt`: ISO timestamp
 - `generatedBy`: exporter actor
+- `phenopacket`: Phenopackets-oriented v2-shaped projection
 - `roCrateMetadata`: RO-Crate metadata block
 - `workflowRunCrates`: workflow-run projection records
 - `drsObjects`: DRS-like artifact records
@@ -80,6 +82,21 @@ This enables low-friction evolution toward richer RO-Crate packaging without bre
 - `wasAssociatedWith`: export activity linked to exporter agent
 - `wasDerivedFrom`: exported bundle linked to the case entity and artifact entities
 
+## Phenopackets-Oriented Projection
+
+`phenopacket` is an additive export surface, not a claim of full normative Phenopackets conformance yet.
+
+Current projection includes:
+
+- `id` mapped from `caseId`;
+- `subject.id` mapped from `subjectId`;
+- `biosamples[]` projected from registered HomeGenome samples;
+- `files[]` projected from exported artifacts and their DRS-like identifiers;
+- `interpretations[]` projected from workflow runs;
+- `metaData` with generation provenance and a local resource descriptor.
+
+This keeps HomeGenome aligned with the Phenopackets direction while remaining honest about the current runtime slice.
+
 ## JSON Schema
 
 Machine-readable schema:
@@ -101,6 +118,7 @@ Stability rail:
 ## Non-Goals (Current)
 
 - This contract does not yet implement full GA4GH DRS API, WES, TES, or TRS servers.
+- This contract does not yet claim full GA4GH Phenopackets schema parity.
 - This contract does not yet package large binary payloads into archival objects (for example OCFL object trees).
 - This contract does not claim clinical interoperability readiness.
 

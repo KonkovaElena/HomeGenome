@@ -5,8 +5,10 @@ import { HomeGenomeControlPlane } from "../src/application/HomeGenomeControlPlan
 import { InMemoryArtifactStore } from "../src/adapters/InMemoryArtifactStore";
 import { InMemoryAnalysisWorkflowRunner } from "../src/adapters/InMemoryAnalysisWorkflowRunner";
 import { InMemoryEventStore } from "../src/adapters/InMemoryEventStore";
+import { ThresholdHlaTypingConsensusProvider } from "../src/adapters/ThresholdHlaTypingConsensusProvider";
 import { InMemoryReferenceBundleRegistry } from "../src/adapters/InMemoryReferenceBundleRegistry";
 import { ThresholdQcGateEvaluator } from "../src/adapters/ThresholdQcGateEvaluator";
+import { ThresholdVariantConsensusProvider } from "../src/adapters/ThresholdVariantConsensusProvider";
 import { InMemorySampleRegistry } from "../src/adapters/InMemorySampleRegistry";
 import { InMemorySequencingRunCatalog } from "../src/adapters/InMemorySequencingRunCatalog";
 import { InMemoryStateMachineGuard } from "../src/adapters/InMemoryStateMachineGuard";
@@ -54,6 +56,7 @@ function createControlPlane(
   minKnowClient: IMinKnowClient = createMinKnowClientStub(),
 ): HomeGenomeControlPlane {
   return new HomeGenomeControlPlane({
+    hlaTypingConsensusProvider: new ThresholdHlaTypingConsensusProvider(),
     qcGateEvaluator: new ThresholdQcGateEvaluator(),
     sampleRegistry: new InMemorySampleRegistry(),
     sequencingRunCatalog: new InMemorySequencingRunCatalog(),
@@ -64,6 +67,7 @@ function createControlPlane(
     eventStore: new InMemoryEventStore(),
     stateMachineGuard: new InMemoryStateMachineGuard(),
     minKnowClient,
+    variantConsensusProvider: new ThresholdVariantConsensusProvider(),
   });
 }
 
@@ -413,6 +417,7 @@ test("control plane rejects stale case status transitions when state changes bet
   };
 
   const controlPlane = new HomeGenomeControlPlane({
+    hlaTypingConsensusProvider: new ThresholdHlaTypingConsensusProvider(),
     qcGateEvaluator: new ThresholdQcGateEvaluator(),
     sampleRegistry,
     sequencingRunCatalog: new InMemorySequencingRunCatalog(),
@@ -423,6 +428,7 @@ test("control plane rejects stale case status transitions when state changes bet
     eventStore: new InMemoryEventStore(),
     stateMachineGuard: new InMemoryStateMachineGuard(),
     minKnowClient: createMinKnowClientStub(),
+    variantConsensusProvider: new ThresholdVariantConsensusProvider(),
   });
 
   await assert.rejects(
@@ -723,6 +729,10 @@ test("control plane exports a case bundle with RO-Crate, PROV, and DRS reference
   assert.equal(bundle.workflowRunCrates.length, 1);
   assert.equal(bundle.workflowRunCrates[0].runId, "analysis-run-export-001");
   assert.equal(bundle.drsObjects.length, 1);
+  assert.equal(bundle.phenopacket.id, "case-export-001");
+  assert.equal(bundle.phenopacket.subject.id, "subject-export-001");
+  assert.equal(bundle.phenopacket.biosamples[0].id, "sample-export-001");
+  assert.equal(bundle.phenopacket.files[0].uri, `drs://homegenome.local/${EXPORT_SIGNAL_DRS_ID}`);
   assert.equal(bundle.drsObjects[0].id, EXPORT_SIGNAL_DRS_ID);
   assert.equal(bundle.drsObjects[0].selfUri.includes("drs://"), true);
   assert.equal(bundle.drsObjects[0].checksums[0].type, "sha-256");

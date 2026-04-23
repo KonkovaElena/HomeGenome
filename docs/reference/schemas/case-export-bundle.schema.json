@@ -9,6 +9,7 @@
     "caseId",
     "generatedAt",
     "generatedBy",
+    "phenopacket",
     "roCrateMetadata",
     "workflowRunCrates",
     "drsObjects",
@@ -35,6 +36,9 @@
     "generatedBy": {
       "type": "string",
       "minLength": 1
+    },
+    "phenopacket": {
+      "$ref": "#/$defs/phenopacketRecord"
     },
     "roCrateMetadata": {
       "type": "object",
@@ -300,6 +304,116 @@
         "completedAt": { "type": "string", "format": "date-time" },
         "backend": { "type": "string" },
         "nextflowSessionId": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "phenopacketSubjectRecord": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "phenopacketBiosampleRecord": {
+      "type": "object",
+      "required": ["id", "individualId", "sampleType"],
+      "properties": {
+        "id": { "type": "string" },
+        "individualId": { "type": "string" },
+        "sampleType": { "type": "string" },
+        "notes": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "phenopacketFileAttributes": {
+      "type": "object",
+      "required": ["fileFormat", "drsObjectId", "checksum"],
+      "properties": {
+        "fileFormat": { "type": "string" },
+        "drsObjectId": { "type": "string" },
+        "checksum": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "phenopacketFileRecord": {
+      "type": "object",
+      "required": ["uri", "description", "individualToFileIdentifiers", "fileAttributes"],
+      "properties": {
+        "uri": { "type": "string", "format": "uri" },
+        "description": { "type": "string" },
+        "individualToFileIdentifiers": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "fileAttributes": { "$ref": "#/$defs/phenopacketFileAttributes" }
+      },
+      "additionalProperties": false
+    },
+    "phenopacketInterpretationDiagnosis": {
+      "type": "object",
+      "required": ["description"],
+      "properties": {
+        "description": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "phenopacketInterpretationRecord": {
+      "type": "object",
+      "required": ["id", "progressStatus", "diagnosis"],
+      "properties": {
+        "id": { "type": "string" },
+        "progressStatus": { "type": "string" },
+        "diagnosis": { "$ref": "#/$defs/phenopacketInterpretationDiagnosis" }
+      },
+      "additionalProperties": false
+    },
+    "phenopacketMetaDataResourceRecord": {
+      "type": "object",
+      "required": ["id", "name", "url", "version", "namespacePrefix", "iriPrefix"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "url": { "type": "string", "format": "uri" },
+        "version": { "type": "string" },
+        "namespacePrefix": { "type": "string" },
+        "iriPrefix": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "phenopacketMetaDataRecord": {
+      "type": "object",
+      "required": ["created", "createdBy", "phenopacketSchemaVersion", "resources"],
+      "properties": {
+        "created": { "type": "string", "format": "date-time" },
+        "createdBy": { "type": "string" },
+        "phenopacketSchemaVersion": { "type": "string", "const": "2.0" },
+        "resources": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/phenopacketMetaDataResourceRecord" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "phenopacketRecord": {
+      "type": "object",
+      "required": ["id", "subject", "biosamples", "files", "interpretations", "metaData"],
+      "properties": {
+        "id": { "type": "string" },
+        "subject": { "$ref": "#/$defs/phenopacketSubjectRecord" },
+        "biosamples": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/phenopacketBiosampleRecord" }
+        },
+        "files": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/phenopacketFileRecord" }
+        },
+        "interpretations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/phenopacketInterpretationRecord" }
+        },
+        "metaData": { "$ref": "#/$defs/phenopacketMetaDataRecord" }
       },
       "additionalProperties": false
     },

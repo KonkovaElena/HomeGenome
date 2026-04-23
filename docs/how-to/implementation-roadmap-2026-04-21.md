@@ -128,7 +128,8 @@ Bridge to interoperability:
 
 - `IQcGateEvaluator` and `ThresholdQcGateEvaluator` now exist in the minimal runtime slice.
 - `HomeGenomeControlPlane.evaluateCaseQc()` now materializes explicit `PASS`, `FAIL`, and `MANUAL_REVIEW` decisions instead of relying on manual status changes only.
-- the next rational extension is caller-consensus evidence (`IVariantConsensusProvider`, `IHlaTypingConsensusProvider`), not more ad hoc status branching.
+- `IVariantConsensusProvider` and `IHlaTypingConsensusProvider` now gate the transition from `CONSENSUS_REVIEW_REQUIRED` to `INTERPRETATION_RUNNING`.
+- the next rational extension is richer consensus evidence ingestion from actual caller artifacts, not more ad hoc status branching.
 
 ## Phase 4. Interpretation Layer
 
@@ -174,6 +175,11 @@ Deliverables:
 - Phenopacket-oriented export;
 - optional FHIR-oriented summary export;
 - explicit file manifests for BAM, VCF and heavy artifacts.
+
+Статус:
+
+- `CaseExportBundle.phenopacket` now emits a minimal Phenopackets-oriented projection with `subject`, `biosamples`, `files`, `interpretations`, and `metaData`.
+- the current shape is intentionally additive and conservative; full schema-complete Phenopackets parity remains future interoperability work.
 
 ## Phase 7. Horizon Integrations
 

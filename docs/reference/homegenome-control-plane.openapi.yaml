@@ -473,6 +473,129 @@ components:
         nextflowSessionId:
           type: string
       additionalProperties: false
+    PhenopacketSubjectRecord:
+      type: object
+      required: [id]
+      properties:
+        id:
+          type: string
+      additionalProperties: false
+    PhenopacketBiosampleRecord:
+      type: object
+      required: [id, individualId, sampleType]
+      properties:
+        id:
+          type: string
+        individualId:
+          type: string
+        sampleType:
+          type: string
+        notes:
+          type: string
+      additionalProperties: false
+    PhenopacketFileAttributes:
+      type: object
+      required: [fileFormat, drsObjectId, checksum]
+      properties:
+        fileFormat:
+          type: string
+        drsObjectId:
+          type: string
+        checksum:
+          type: string
+      additionalProperties: false
+    PhenopacketFileRecord:
+      type: object
+      required: [uri, description, individualToFileIdentifiers, fileAttributes]
+      properties:
+        uri:
+          type: string
+          format: uri
+        description:
+          type: string
+        individualToFileIdentifiers:
+          type: array
+          items:
+            type: string
+        fileAttributes:
+          $ref: "#/components/schemas/PhenopacketFileAttributes"
+      additionalProperties: false
+    PhenopacketInterpretationDiagnosis:
+      type: object
+      required: [description]
+      properties:
+        description:
+          type: string
+      additionalProperties: false
+    PhenopacketInterpretationRecord:
+      type: object
+      required: [id, progressStatus, diagnosis]
+      properties:
+        id:
+          type: string
+        progressStatus:
+          type: string
+        diagnosis:
+          $ref: "#/components/schemas/PhenopacketInterpretationDiagnosis"
+      additionalProperties: false
+    PhenopacketMetaDataResourceRecord:
+      type: object
+      required: [id, name, url, version, namespacePrefix, iriPrefix]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        url:
+          type: string
+          format: uri
+        version:
+          type: string
+        namespacePrefix:
+          type: string
+        iriPrefix:
+          type: string
+      additionalProperties: false
+    PhenopacketMetaDataRecord:
+      type: object
+      required: [created, createdBy, phenopacketSchemaVersion, resources]
+      properties:
+        created:
+          type: string
+          format: date-time
+        createdBy:
+          type: string
+        phenopacketSchemaVersion:
+          type: string
+          const: "2.0"
+        resources:
+          type: array
+          items:
+            $ref: "#/components/schemas/PhenopacketMetaDataResourceRecord"
+      additionalProperties: false
+    PhenopacketRecord:
+      type: object
+      required: [id, subject, biosamples, files, interpretations, metaData]
+      properties:
+        id:
+          type: string
+        subject:
+          $ref: "#/components/schemas/PhenopacketSubjectRecord"
+        biosamples:
+          type: array
+          items:
+            $ref: "#/components/schemas/PhenopacketBiosampleRecord"
+        files:
+          type: array
+          items:
+            $ref: "#/components/schemas/PhenopacketFileRecord"
+        interpretations:
+          type: array
+          items:
+            $ref: "#/components/schemas/PhenopacketInterpretationRecord"
+        metaData:
+          $ref: "#/components/schemas/PhenopacketMetaDataRecord"
+      additionalProperties: false
     CaseExportBundle:
       type: object
       required:
@@ -481,6 +604,7 @@ components:
         - caseId
         - generatedAt
         - generatedBy
+        - phenopacket
         - roCrateMetadata
         - workflowRunCrates
         - drsObjects
@@ -499,6 +623,8 @@ components:
           format: date-time
         generatedBy:
           type: string
+        phenopacket:
+          $ref: "#/components/schemas/PhenopacketRecord"
         roCrateMetadata:
           type: object
           required:

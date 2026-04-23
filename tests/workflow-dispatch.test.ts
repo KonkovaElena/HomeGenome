@@ -8,7 +8,9 @@ import { InMemoryReferenceBundleRegistry } from "../src/adapters/InMemoryReferen
 import { InMemorySampleRegistry } from "../src/adapters/InMemorySampleRegistry";
 import { InMemorySequencingRunCatalog } from "../src/adapters/InMemorySequencingRunCatalog";
 import { InMemoryStateMachineGuard } from "../src/adapters/InMemoryStateMachineGuard";
+import { ThresholdHlaTypingConsensusProvider } from "../src/adapters/ThresholdHlaTypingConsensusProvider";
 import { ThresholdQcGateEvaluator } from "../src/adapters/ThresholdQcGateEvaluator";
+import { ThresholdVariantConsensusProvider } from "../src/adapters/ThresholdVariantConsensusProvider";
 import { InMemoryWorkflowDispatchSink } from "../src/adapters/InMemoryWorkflowDispatchSink";
 import { NextflowWorkflowRunner } from "../src/adapters/NextflowWorkflowRunner";
 import { IMinKnowClient } from "../src/ports/IMinKnowClient";
@@ -44,6 +46,7 @@ function createControlPlane(
   minKnowClient: IMinKnowClient = createMinKnowClientStub(),
 ): HomeGenomeControlPlane {
   return new HomeGenomeControlPlane({
+    hlaTypingConsensusProvider: new ThresholdHlaTypingConsensusProvider(),
     qcGateEvaluator: new ThresholdQcGateEvaluator(),
     sampleRegistry: new InMemorySampleRegistry(),
     sequencingRunCatalog: new InMemorySequencingRunCatalog(),
@@ -54,6 +57,7 @@ function createControlPlane(
     eventStore: new InMemoryEventStore(),
     stateMachineGuard: new InMemoryStateMachineGuard(),
     minKnowClient,
+    variantConsensusProvider: new ThresholdVariantConsensusProvider(),
   });
 }
 
@@ -157,8 +161,68 @@ test("control plane records workflow dispatches and tracked runs", async () => {
   assert.equal(completedRun.status, "COMPLETED");
   assert.equal(snapshot.workflowDispatches.length, 1);
   assert.equal(snapshot.workflowRuns.length, 1);
-  assert.equal(snapshot.caseRecord.status, "INTERPRETATION_RUNNING");
+  assert.equal(snapshot.caseRecord.status, "CONSENSUS_REVIEW_REQUIRED");
   assert.equal(snapshot.workflowRuns[0].workflowName, "wf-human-variation");
+});
+
+test("control plane advances to interpretation after variant and hla consensus are confirmed", async () => {
+  const controlPlane = createControlPlane();
+
+  await prepareQcPassedCase(controlPlane, "case-consensus-001");
+
+  const dispatch = await controlPlane.requestAnalysisWorkflow({
+    dispatchId: "dispatch-consensus-001",
+    caseId: "case-consensus-001",
+    requestId: "request-consensus-001",
+    workflowName: "wf-human-variation",
+    referenceBundleId: "case-consensus-001-bundle",
+    executionProfile: "local-ont",
+    requestedAt: "2026-04-21T12:09:00.000Z",
+  });
+
+  const run = await controlPlane.startAnalysisWorkflowRun({
+    dispatchId: dispatch.dispatchId,
+    runId: "analysis-run-consensus-001",
+    occurredAt: "2026-04-21T12:10:00.000Z",
+  });
+
+  await controlPlane.completeAnalysisWorkflowRun({
+    runId: run.runId,
+    occurredAt: "2026-04-21T12:11:00.000Z",
+  });
+
+  const review = await controlPlane.reviewCaseConsensus({
+    caseId: "case-consensus-001",
+    occurredAt: "2026-04-21T12:12:00.000Z",
+    variantCalls: [
+      {
+        caller: "clair3",
+        locus: "chr1:12345",
+        allele: "A>T",
+      },
+      {
+        caller: "deepvariant",
+        locus: "chr1:12345",
+        allele: "A>T",
+      },
+    ],
+    hlaCalls: [
+      {
+        caller: "hla-la",
+        gene: "HLA-A",
+        alleles: ["A*01:01", "A*02:01"],
+      },
+      {
+        caller: "spec-hla",
+        gene: "HLA-A",
+        alleles: ["A*01:01", "A*02:01"],
+      },
+    ],
+  });
+
+  assert.equal(review.caseRecord.status, "INTERPRETATION_RUNNING");
+  assert.equal(review.variantDecision.outcome, "CONSENSUS");
+  assert.equal(review.hlaDecision.outcome, "CONSENSUS");
 });
 
 test("control plane rejects workflow requests before QC passes", async () => {

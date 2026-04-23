@@ -10,6 +10,9 @@ import {
   ArtifactManifestRecord,
   WorkflowDispatchRecord,
   CreateHomeGenomeCaseInput,
+  HlaTypingConsensusCall,
+  HlaTypingConsensusDecision,
+  HlaTypingConsensusThresholds,
   HomeGenomeCaseRecord,
   HomeGenomeCaseStatus,
   HomeGenomeQcDecision,
@@ -24,6 +27,9 @@ import {
   SequencingRunTelemetrySnapshot,
   SequencingRunRecord,
   SequencingRunStatus,
+  VariantConsensusCall,
+  VariantConsensusDecision,
+  VariantConsensusThresholds,
   BiosampleRecord,
   isRawCaptureArtifact,
   normalizeTimestamp,
@@ -35,12 +41,14 @@ import {
   IAnalysisWorkflowRunner,
 } from "../ports/IAnalysisWorkflowRunner";
 import { IEventStore, PersistedEventRecord } from "../ports/IEventStore";
+import { IHlaTypingConsensusProvider } from "../ports/IHlaTypingConsensusProvider";
 import { IMinKnowClient } from "../ports/IMinKnowClient";
 import { IQcGateEvaluator } from "../ports/IQcGateEvaluator";
 import { IReferenceBundleRegistry } from "../ports/IReferenceBundleRegistry";
 import { ISampleRegistry } from "../ports/ISampleRegistry";
 import { ISequencingRunCatalog } from "../ports/ISequencingRunCatalog";
 import { IStateMachineGuard } from "../ports/IStateMachineGuard";
+import { IVariantConsensusProvider } from "../ports/IVariantConsensusProvider";
 import { IWorkflowDispatchSink } from "../ports/IWorkflowDispatchSink";
 
 export interface HomeGenomeAuditEventInput {
@@ -111,6 +119,22 @@ export interface CompleteAnalysisWorkflowRunInput {
   correlationId?: string;
 }
 
+export interface ReviewCaseConsensusInput {
+  caseId: string;
+  occurredAt?: string;
+  correlationId?: string;
+  variantCalls: ReadonlyArray<VariantConsensusCall>;
+  hlaCalls: ReadonlyArray<HlaTypingConsensusCall>;
+  variantThresholds?: Partial<VariantConsensusThresholds>;
+  hlaThresholds?: Partial<HlaTypingConsensusThresholds>;
+}
+
+export interface ReviewCaseConsensusResult {
+  caseRecord: HomeGenomeCaseRecord;
+  variantDecision: VariantConsensusDecision;
+  hlaDecision: HlaTypingConsensusDecision;
+}
+
 export interface CancelAnalysisWorkflowRunInput {
   runId: string;
   occurredAt?: string;
@@ -173,12 +197,68 @@ export interface WorkflowRunExportBundleRecord {
   nextflowSessionId?: string;
 }
 
+export interface PhenopacketSubjectRecord {
+  id: string;
+}
+
+export interface PhenopacketBiosampleRecord {
+  id: string;
+  individualId: string;
+  sampleType: string;
+  notes?: string;
+}
+
+export interface PhenopacketFileRecord {
+  uri: string;
+  description: string;
+  individualToFileIdentifiers: ReadonlyArray<string>;
+  fileAttributes: {
+    fileFormat: string;
+    drsObjectId: string;
+    checksum: string;
+  };
+}
+
+export interface PhenopacketInterpretationRecord {
+  id: string;
+  progressStatus: string;
+  diagnosis: {
+    description: string;
+  };
+}
+
+export interface PhenopacketMetaDataResourceRecord {
+  id: string;
+  name: string;
+  url: string;
+  version: string;
+  namespacePrefix: string;
+  iriPrefix: string;
+}
+
+export interface PhenopacketMetaDataRecord {
+  created: string;
+  createdBy: string;
+  phenopacketSchemaVersion: "2.0";
+  resources: ReadonlyArray<PhenopacketMetaDataResourceRecord>;
+}
+
+export interface PhenopacketRecord {
+  id: string;
+  subject: PhenopacketSubjectRecord;
+  biosamples: ReadonlyArray<PhenopacketBiosampleRecord>;
+  files: ReadonlyArray<PhenopacketFileRecord>;
+  interpretations: ReadonlyArray<PhenopacketInterpretationRecord>;
+  metaData: PhenopacketMetaDataRecord;
+}
+
 export interface CaseExportBundle {
   schemaVersion: "1.0.0";
   bundleId: string;
   caseId: string;
   generatedAt: string;
   generatedBy: string;
+  phenopacket: PhenopacketRecord;
   roCrateMetadata: {
     "@context": "https://w3id.org/ro/crate/1.1/context";
     "@graph": ReadonlyArray<Record<string, unknown>>;
@@ -199,6 +279,7 @@ export interface CaseExportBundle {
 }
 
 export interface HomeGenomeControlPlaneDependencies {
+  hlaTypingConsensusProvider: IHlaTypingConsensusProvider;
   qcGateEvaluator: IQcGateEvaluator;
   sampleRegistry: ISampleRegistry;
   sequencingRunCatalog: ISequencingRunCatalog;
@@ -209,6 +290,7 @@ export interface HomeGenomeControlPlaneDependencies {
   eventStore: IEventStore<HomeGenomeAuditEventInput>;
   stateMachineGuard: IStateMachineGuard;
   minKnowClient: IMinKnowClient;
+  variantConsensusProvider: IVariantConsensusProvider;
 }
 
 export class HomeGenomeControlPlane {
@@ -604,7 +686,7 @@ export class HomeGenomeControlPlane {
     if (caseRecord.status === "PRIMARY_ANALYSIS_RUNNING") {
       await this.transitionCaseStatus({
         caseId: run.caseId,
-        nextStatus: "INTERPRETATION_RUNNING",
+        nextStatus: "CONSENSUS_REVIEW_REQUIRED",
         occurredAt: input.occurredAt,
         correlationId: input.correlationId,
       });
@@ -616,6 +698,61 @@ export class HomeGenomeControlPlane {
     });
 
     return run;
+  }
+
+  async reviewCaseConsensus(
+    input: ReviewCaseConsensusInput,
+  ): Promise<ReviewCaseConsensusResult> {
+    let caseRecord = await this.requireCase(input.caseId);
+
+    if (caseRecord.status !== "CONSENSUS_REVIEW_REQUIRED") {
+      throw new Error(
+        `Case is not ready for consensus review: ${input.caseId} (${caseRecord.status})`,
+      );
+    }
+
+    const variantDecision = await this.deps.variantConsensusProvider.evaluate({
+      caseId: input.caseId,
+      evaluatedAt: normalizeTimestamp(input.occurredAt),
+      calls: input.variantCalls,
+      thresholds: input.variantThresholds,
+    });
+
+    const hlaDecision = await this.deps.hlaTypingConsensusProvider.evaluate({
+      caseId: input.caseId,
+      evaluatedAt: normalizeTimestamp(input.occurredAt),
+      calls: input.hlaCalls,
+      thresholds: input.hlaThresholds,
+    });
+
+    await this.appendCaseEvent(
+      input.caseId,
+      "CASE_CONSENSUS_REVIEWED",
+      input.occurredAt,
+      input.correlationId,
+      {
+        variantDecision,
+        hlaDecision,
+      },
+    );
+
+    if (
+      variantDecision.outcome === "CONSENSUS" &&
+      hlaDecision.outcome === "CONSENSUS"
+    ) {
+      caseRecord = await this.transitionCaseStatus({
+        caseId: input.caseId,
+        nextStatus: "INTERPRETATION_RUNNING",
+        occurredAt: input.occurredAt,
+        correlationId: input.correlationId,
+      });
+    }
+
+    return {
+      caseRecord,
+      variantDecision,
+      hlaDecision,
+    };
   }
 
   async cancelAnalysisWorkflowRun(
@@ -816,6 +953,7 @@ export class HomeGenomeControlPlane {
       caseId: snapshot.caseRecord.caseId,
       generatedAt,
       generatedBy,
+      phenopacket: this.toPhenopacket(snapshot, generatedAt, generatedBy, drsObjects),
       roCrateMetadata: {
         "@context": "https://w3id.org/ro/crate/1.1/context",
         "@graph": roCrateGraph,
@@ -1022,6 +1160,66 @@ export class HomeGenomeControlPlane {
       artifactKinds:
         metrics?.artifactKinds ??
         snapshot.artifacts.map((artifact) => artifact.kind),
+    };
+  }
+
+  private toPhenopacket(
+    snapshot: HomeGenomeCaseSnapshot,
+    generatedAt: string,
+    generatedBy: string,
+    drsObjects: ReadonlyArray<CaseBundleDrsObject>,
+  ): PhenopacketRecord {
+    const drsBySourceUri = new Map(
+      drsObjects.map((drsObject) => [drsObject.sourceUri, drsObject]),
+    );
+
+    return {
+      id: snapshot.caseRecord.caseId,
+      subject: {
+        id: snapshot.caseRecord.subjectId,
+      },
+      biosamples: snapshot.samples.map((sample) => ({
+        id: sample.sampleId,
+        individualId: snapshot.caseRecord.subjectId,
+        sampleType: sample.sampleType,
+        notes: sample.notes,
+      })),
+      files: snapshot.artifacts.map((artifact) => {
+        const drsObject = drsBySourceUri.get(artifact.uri);
+
+        return {
+          uri: drsObject?.selfUri ?? artifact.uri,
+          description: `${artifact.kind} artifact ${artifact.artifactId}`,
+          individualToFileIdentifiers: [snapshot.caseRecord.subjectId],
+          fileAttributes: {
+            fileFormat: this.toMimeType(artifact.kind),
+            drsObjectId: drsObject?.id ?? artifact.artifactId,
+            checksum: artifact.checksum,
+          },
+        };
+      }),
+      interpretations: snapshot.workflowRuns.map((run) => ({
+        id: `interpretation-${run.runId}`,
+        progressStatus: run.status,
+        diagnosis: {
+          description: `${run.workflowName} (${run.referenceBundleId})`,
+        },
+      })),
+      metaData: {
+        created: generatedAt,
+        createdBy: generatedBy,
+        phenopacketSchemaVersion: "2.0",
+        resources: [
+          {
+            id: "homegenome",
+            name: "HomeGenome local export vocabulary",
+            url: "https://github.com/KonkovaElena/HomeGenome",
+            version: "0.1.0",
+            namespacePrefix: "homegenome",
+            iriPrefix: "urn:homegenome:",
+          },
+        ],
+      },
     };
   }
 

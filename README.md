@@ -52,9 +52,10 @@ The code in `src/` and `tests/` is intentionally narrow. It currently covers:
 - workflow dispatch and workflow-run tracking;
 - file-backed durability for events and workflow state;
 - threshold-based QC gate evaluation with explicit pass, fail, and manual-review outcomes;
+- threshold-based variant and HLA consensus review before interpretation release;
 - sequencing telemetry ingestion;
 - adaptive sampling updates through an explicit `IMinKnowClient` port.
-- case-level export bundles with RO-Crate metadata and PROV/DRS-compatible fields.
+- case-level export bundles with RO-Crate metadata, PROV/DRS-compatible fields, and a Phenopackets-oriented projection.
 
 It does not yet implement a full sequencing operations stack, a MinKNOW adapter, or clinical-grade durability.
 
