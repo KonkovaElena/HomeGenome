@@ -168,6 +168,36 @@ export interface RegisterArtifactInput {
   createdAt?: string;
 }
 
+export interface HomeGenomeQcMetrics {
+  estimatedCoverage?: number;
+  mappedReadPercent?: number;
+  contaminationRate?: number;
+  artifactKinds?: ReadonlyArray<ArtifactKind>;
+  requiresManualReview?: boolean;
+}
+
+export interface HomeGenomeQcThresholds {
+  minimumCoverage: number;
+  minimumMappedReadPercent: number;
+  maximumContaminationRate?: number;
+  requiredArtifactKinds: ReadonlyArray<ArtifactKind>;
+}
+
+export interface HomeGenomeQcDecision {
+  outcome: "PASS" | "FAIL" | "MANUAL_REVIEW";
+  evaluatedAt: string;
+  metrics: HomeGenomeQcMetrics;
+  thresholds: HomeGenomeQcThresholds;
+  reasons: ReadonlyArray<string>;
+}
+
+export const DEFAULT_HOME_GENOME_QC_THRESHOLDS: HomeGenomeQcThresholds = {
+  minimumCoverage: 10,
+  minimumMappedReadPercent: 95,
+  maximumContaminationRate: 0.05,
+  requiredArtifactKinds: ["RAW_SIGNAL"],
+};
+
 export interface ReferenceBundleRecord {
   bundleId: string;
   name: string;

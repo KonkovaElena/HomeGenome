@@ -1,8 +1,8 @@
 ---
 title: "HomeGenome Implementation Roadmap"
 status: "active"
-version: "1.0.0"
-last_updated: "2026-04-21"
+version: "1.1.0"
+last_updated: "2026-04-23"
 tags: [homegenome, roadmap, implementation, architecture]
 mode: "how-to"
 ---
@@ -123,6 +123,12 @@ Bridge to interoperability:
 - keep `CaseExportBundle` aligned with `RO-Crate`, `W3C PROV-O`, and DRS-like artifact identifiers so later GA4GH export layers are additive rather than disruptive.
 
 Это фаза, где HomeGenome перестаёт быть просто run-tracker и становится evidence-aware genomics system.
+
+Статус:
+
+- `IQcGateEvaluator` and `ThresholdQcGateEvaluator` now exist in the minimal runtime slice.
+- `HomeGenomeControlPlane.evaluateCaseQc()` now materializes explicit `PASS`, `FAIL`, and `MANUAL_REVIEW` decisions instead of relying on manual status changes only.
+- the next rational extension is caller-consensus evidence (`IVariantConsensusProvider`, `IHlaTypingConsensusProvider`), not more ad hoc status branching.
 
 ## Phase 4. Interpretation Layer
 

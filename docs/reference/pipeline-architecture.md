@@ -164,19 +164,20 @@
 | Инструмент | Версия (2026) | Лицензия | Функция | GPU |
 |---|---|---|---|---|
 | **MinKNOW** | ≥24.11.10 | Проприет. (бесплатно) | Управление секвенатором, adaptive sampling | — |
-| **Dorado** | v0.8+ | Oxford Nanopore | Бейзколлинг (FAST/HAC/SUP), метилирование | ✅ CUDA / Metal |
+| **Dorado** | v0.8+ | Oxford Nanopore | Бейзколлинг (FAST/HAC/SUP), метилирование, `mv` move-table tags | ✅ CUDA / Metal |
 | **pod5** | v0.3+ | MPL-2.0 | Чтение / конвертация сырых сигналов | — |
 
 ### Layer 2: Genomics Analysis
 
 | Инструмент | Версия | Лицензия | Функция | Вход → Выход |
 |---|---|---|---|---|
-| **minimap2** | 2.28+ | MIT | Alignment (длинные прочтения) | BAM → aligned BAM |
+| **Dorado aligner** | v0.8+ | Oxford Nanopore | Alignment для HTS-выходов Dorado, использует minimap2 (`lr:hq`) внутри | unaligned BAM/SAM → aligned BAM |
+| **minimap2** | 2.28+ | MIT | Бэкенд выравнивания для Dorado aligner и кастомных long-read flows | FASTQ/FASTA/HTS → aligned BAM/SAM |
 | **samtools** | 1.20+ | MIT/Expat | Sort, index, flagstat, merge | BAM → BAM + BAI |
 | **mosdepth** | 0.3+ | MIT | Расчёт покрытия по регионам | BAM → BED/TSV |
 | **NanoPlot** | 1.43+ | GPL-3.0 | QC визуализация прочтений | BAM/fastq → PNG/HTML |
 | **fastcat** | 0.18+ | MPL-2.0 | Быстрая статистика прочтений | BAM → TSV |
-| **Clair3** | **v2.0** | BSD-3 | SNV + indel calling (PyTorch) | BAM → VCF |
+| **Clair3** | **v2.0** | BSD-3 | SNV + indel calling (PyTorch), включая dwell-time-aware ONT режим | BAM + `mv` tags → VCF |
 | **Sniffles2** | 2.4+ | MIT | Структурные варианты | BAM → VCF |
 | **cuteSV** | 2.1+ | MIT | SV (альтернатива Sniffles) | BAM → VCF |
 | **QDNAseq** | 1.38+ | GPL-2.0 | Copy Number Variations | BAM → segments |
@@ -295,7 +296,7 @@ MODELS_DIR="models"
 DORADO_MODEL="dna_r10.4.1_e8.2_400bps_hac@v5.2.0"
 DORADO_SUP_MODEL="dna_r10.4.1_e8.2_400bps_sup@v5.2.0"
 CLINVAR_VCF="ref/clinvar_20260401.vcf.gz"
-CLAIR3_MODEL="${CLAIR3_MODELS}/ont_r10.4.1_hac"
+CLAIR3_MODEL="${MODELS_DIR}/clair3/r1041_e82_400bps_hac_with_mv"
 OUT="results/${SAMPLE}"
 
 mkdir -p "${OUT}"/{basecall,align,qc,variants,sv,methylation,phasing,annotation,pgx,reports}
@@ -304,6 +305,7 @@ mkdir -p "${OUT}"/{basecall,align,qc,variants,sv,methylation,phasing,annotation,
 echo ">>> [1/10] Basecalling (HAC + 5mC_5hmC)..."
 dorado basecaller \
   -x auto \
+  --emit-moves \
   --modified-bases 5mC_5hmC \
   "${MODELS_DIR}/${DORADO_MODEL}" \
   "${POD5_DIR}" \
@@ -315,15 +317,11 @@ dorado basecaller \
 #   "${POD5_DIR}" > "${OUT}/basecall/${SAMPLE}.sup.bam"
 
 # ─── STAGE 2: ALIGNMENT ──────────────────────────────────────
-echo ">>> [2/10] Alignment (minimap2)..."
-minimap2 -ax map-ont \
-  --MD \
-  -t "${THREADS}" \
+echo ">>> [2/10] Alignment (Dorado aligner / minimap2 lr:hq)..."
+dorado aligner \
   "${REF}" \
   "${OUT}/basecall/${SAMPLE}.unaligned.bam" \
-  | samtools sort \
-    -@ "${THREADS}" \
-    -o "${OUT}/align/${SAMPLE}.sorted.bam" -
+  > "${OUT}/align/${SAMPLE}.sorted.bam"
 samtools index -@ "${THREADS}" "${OUT}/align/${SAMPLE}.sorted.bam"
 
 BAM="${OUT}/align/${SAMPLE}.sorted.bam"
@@ -354,7 +352,7 @@ MEAN_COV=$(awk '/^total/ {print $4}' "${OUT}/qc/${SAMPLE}.mosdepth.summary.txt")
 echo "    Mean coverage: ${MEAN_COV}x"
 
 # ─── STAGE 4: SMALL VARIANT CALLING ──────────────────────────
-echo ">>> [4/10] SNV + Indel calling (Clair3 v2.0)..."
+echo ">>> [4/10] SNV + Indel calling (Clair3 v2.0, dwell-time aware)..."
 run_clair3.sh \
   --bam_fn="${BAM}" \
   --ref_fn="${REF}" \
@@ -363,7 +361,11 @@ run_clair3.sh \
   --platform="ont" \
   --model_path="${CLAIR3_MODEL}" \
   --sample_name="${SAMPLE}" \
+  --enable_dwell_time \
   --include_all_ctgs
+
+# Clair3 v2.0 expects mv tags from Dorado --emit-moves for signal-aware calling.
+# If mv tags are absent, disable --enable_dwell_time or re-basecall with Dorado.
 
 SNV_VCF="${OUT}/variants/merge_output.vcf.gz"
 

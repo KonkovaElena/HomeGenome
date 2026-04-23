@@ -6,6 +6,7 @@ import { InMemoryArtifactStore } from "../src/adapters/InMemoryArtifactStore";
 import { InMemoryAnalysisWorkflowRunner } from "../src/adapters/InMemoryAnalysisWorkflowRunner";
 import { InMemoryEventStore } from "../src/adapters/InMemoryEventStore";
 import { InMemoryReferenceBundleRegistry } from "../src/adapters/InMemoryReferenceBundleRegistry";
+import { ThresholdQcGateEvaluator } from "../src/adapters/ThresholdQcGateEvaluator";
 import { InMemorySampleRegistry } from "../src/adapters/InMemorySampleRegistry";
 import { InMemorySequencingRunCatalog } from "../src/adapters/InMemorySequencingRunCatalog";
 import { InMemoryStateMachineGuard } from "../src/adapters/InMemoryStateMachineGuard";
@@ -53,6 +54,7 @@ function createControlPlane(
   minKnowClient: IMinKnowClient = createMinKnowClientStub(),
 ): HomeGenomeControlPlane {
   return new HomeGenomeControlPlane({
+    qcGateEvaluator: new ThresholdQcGateEvaluator(),
     sampleRegistry: new InMemorySampleRegistry(),
     sequencingRunCatalog: new InMemorySequencingRunCatalog(),
     artifactStore: new InMemoryArtifactStore(),
@@ -73,6 +75,72 @@ type SampleRegistryCompareAndSwapFacade = {
     expectedCurrentStatus?: string,
   ): Promise<{ status: string }>;
 };
+
+test("control plane evaluates qc metrics and advances a case to qc passed", async () => {
+  const controlPlane = createControlPlane();
+
+  await controlPlane.createCase({
+    caseId: "case-qc-pass-001",
+    subjectId: "subject-qc-pass-001",
+    createdAt: "2026-04-23T18:10:00.000Z",
+  });
+
+  await controlPlane.registerSample({
+    sampleId: "sample-qc-pass-001",
+    caseId: "case-qc-pass-001",
+    sampleType: "saliva",
+    collectedAt: "2026-04-23T18:11:00.000Z",
+    createdAt: "2026-04-23T18:12:00.000Z",
+  });
+
+  await controlPlane.registerReferenceBundle({
+    bundleId: "bundle-qc-pass-001",
+    name: "GRCh38 qc bundle",
+    version: "2026.04",
+    createdAt: "2026-04-23T18:13:00.000Z",
+  });
+
+  await controlPlane.registerSequencingRun({
+    runId: "run-qc-pass-001",
+    caseId: "case-qc-pass-001",
+    sampleId: "sample-qc-pass-001",
+    platform: "ONT_MINION",
+    referenceBundleId: "bundle-qc-pass-001",
+    createdAt: "2026-04-23T18:14:00.000Z",
+  });
+
+  await controlPlane.updateSequencingRunStatus({
+    runId: "run-qc-pass-001",
+    status: "RUNNING",
+    occurredAt: "2026-04-23T18:15:00.000Z",
+    telemetry: {
+      observedAt: "2026-04-23T18:15:00.000Z",
+      estimatedCoverage: 32,
+    },
+  });
+
+  await controlPlane.attachArtifact({
+    artifactId: "artifact-qc-pass-001",
+    caseId: "case-qc-pass-001",
+    runId: "run-qc-pass-001",
+    sampleId: "sample-qc-pass-001",
+    kind: "RAW_SIGNAL",
+    uri: "runs/run-qc-pass-001/raw.pod5",
+    checksum: RAW_SIGNAL_CHECKSUM,
+    createdAt: "2026-04-23T18:16:00.000Z",
+  });
+
+  const result = await controlPlane.evaluateCaseQc({
+    caseId: "case-qc-pass-001",
+    occurredAt: "2026-04-23T18:17:00.000Z",
+    metrics: {
+      mappedReadPercent: 97,
+    },
+  });
+
+  assert.equal(result.decision.outcome, "PASS");
+  assert.equal(result.caseRecord.status, "QC_PASSED");
+});
 
 test("control plane tracks a minimal HomeGenome case lifecycle", async () => {
   const controlPlane = createControlPlane();
@@ -345,6 +413,7 @@ test("control plane rejects stale case status transitions when state changes bet
   };
 
   const controlPlane = new HomeGenomeControlPlane({
+    qcGateEvaluator: new ThresholdQcGateEvaluator(),
     sampleRegistry,
     sequencingRunCatalog: new InMemorySequencingRunCatalog(),
     artifactStore: new InMemoryArtifactStore(),

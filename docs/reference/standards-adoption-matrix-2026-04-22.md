@@ -1,8 +1,8 @@
 ---
 title: "HomeGenome Standards Adoption Matrix"
 status: "active"
-version: "1.0.0"
-last_updated: "2026-04-22"
+version: "1.1.0"
+last_updated: "2026-04-23"
 tags: [homegenome, standards, ga4gh, ro-crate, prov, slsa, security]
 mode: "reference"
 ---
@@ -37,7 +37,9 @@ It separates:
 | Workflow run provenance | Workflow-run crate projection | `implemented` | `workflowRunCrates[]` emitted per workflow run in bundle export. |
 | Reproducible orchestration | Nextflow runner seam | `implemented` | `IAnalysisWorkflowRunner` + `NextflowWorkflowRunner` already in baseline. |
 | Telemetry control | MinKNOW telemetry/adaptive sampling seam | `implemented` | `IMinKnowClient` + control-plane methods are wired and tested. |
+| QC gating | Threshold-based QC pass/fail/manual-review gate | `implemented` | `IQcGateEvaluator`, `ThresholdQcGateEvaluator`, and `evaluateCaseQc()` now provide an explicit QC decision path. |
 | Quality verification | Built-in Node coverage thresholds + contract drift rail | `implemented` | `test:coverage`, checked-in export bundle snapshot, and `verify:contracts` guard schema/API drift. |
+| Variant review consensus | Multi-caller / multi-typer consensus thresholds | `planned` | `IVariantConsensusProvider` and `IHlaTypingConsensusProvider` remain the next evidence-layer extensions. |
 | Data API interoperability | GA4GH DRS API server | `planned` | Current layer is DRS-like contract; full DRS REST surface is not implemented. |
 | Workflow API interoperability | GA4GH WES/TES contracts | `planned` | Current layer uses internal runner/sink contracts with similar intent. |
 | Tool registry interoperability | GA4GH TRS | `planned` | No TRS endpoint yet; reference bundle registry is local-only. |
@@ -54,6 +56,7 @@ It separates:
 ## Implemented Anchors
 
 - Code: `src/application/HomeGenomeControlPlane.ts`
+- QC policy: `src/ports/IQcGateEvaluator.ts`, `src/adapters/ThresholdQcGateEvaluator.ts`
 - Test trap: `tests/homegenome-control-plane.test.ts`
 - Contract: [case-export-bundle-contract.md](case-export-bundle-contract.md)
 - Schema: [schemas/case-export-bundle.schema.json](schemas/case-export-bundle.schema.json)

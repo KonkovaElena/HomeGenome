@@ -12,6 +12,9 @@ import {
   CreateHomeGenomeCaseInput,
   HomeGenomeCaseRecord,
   HomeGenomeCaseStatus,
+  HomeGenomeQcDecision,
+  HomeGenomeQcMetrics,
+  HomeGenomeQcThresholds,
   ReferenceBundleRecord,
   RequestAnalysisWorkflowInput,
   RegisterArtifactInput,
@@ -33,6 +36,7 @@ import {
 } from "../ports/IAnalysisWorkflowRunner";
 import { IEventStore, PersistedEventRecord } from "../ports/IEventStore";
 import { IMinKnowClient } from "../ports/IMinKnowClient";
+import { IQcGateEvaluator } from "../ports/IQcGateEvaluator";
 import { IReferenceBundleRegistry } from "../ports/IReferenceBundleRegistry";
 import { ISampleRegistry } from "../ports/ISampleRegistry";
 import { ISequencingRunCatalog } from "../ports/ISequencingRunCatalog";
@@ -62,6 +66,19 @@ export interface UpdateSequencingRunStatusInput {
   occurredAt?: string;
   correlationId?: string;
   telemetry?: SequencingRunTelemetrySnapshot;
+}
+
+export interface EvaluateCaseQcInput {
+  caseId: string;
+  occurredAt?: string;
+  correlationId?: string;
+  metrics?: HomeGenomeQcMetrics;
+  thresholds?: Partial<HomeGenomeQcThresholds>;
+}
+
+export interface EvaluateCaseQcResult {
+  decision: HomeGenomeQcDecision;
+  caseRecord: HomeGenomeCaseRecord;
 }
 
 export interface ApplyAdaptiveSamplingTargetInput {
@@ -182,6 +199,7 @@ export interface CaseExportBundle {
 }
 
 export interface HomeGenomeControlPlaneDependencies {
+  qcGateEvaluator: IQcGateEvaluator;
   sampleRegistry: ISampleRegistry;
   sequencingRunCatalog: ISequencingRunCatalog;
   artifactStore: IArtifactStore;
@@ -472,6 +490,72 @@ export class HomeGenomeControlPlane {
     });
 
     return artifact;
+  }
+
+  async evaluateCaseQc(
+    input: EvaluateCaseQcInput,
+  ): Promise<EvaluateCaseQcResult> {
+    let caseRecord = await this.requireCase(input.caseId);
+
+    if (
+      caseRecord.status !== "RAW_ARTIFACTS_CAPTURED" &&
+      caseRecord.status !== "QC_PENDING"
+    ) {
+      throw new Error(
+        `Case is not ready for QC evaluation: ${input.caseId} (${caseRecord.status})`,
+      );
+    }
+
+    if (caseRecord.status === "RAW_ARTIFACTS_CAPTURED") {
+      caseRecord = await this.transitionCaseStatus({
+        caseId: input.caseId,
+        nextStatus: "QC_PENDING",
+        occurredAt: input.occurredAt,
+        correlationId: input.correlationId,
+      });
+    }
+
+    const snapshot = await this.getCaseSnapshot(input.caseId);
+    const decision = await this.deps.qcGateEvaluator.evaluate({
+      caseId: input.caseId,
+      evaluatedAt: normalizeTimestamp(input.occurredAt),
+      metrics: this.buildQcMetrics(snapshot, input.metrics),
+      thresholds: input.thresholds,
+    });
+
+    await this.appendCaseEvent(
+      input.caseId,
+      "CASE_QC_EVALUATED",
+      input.occurredAt,
+      input.correlationId,
+      {
+        outcome: decision.outcome,
+        reasons: decision.reasons,
+        metrics: decision.metrics,
+        thresholds: decision.thresholds,
+      },
+    );
+
+    if (decision.outcome === "PASS") {
+      caseRecord = await this.transitionCaseStatus({
+        caseId: input.caseId,
+        nextStatus: "QC_PASSED",
+        occurredAt: input.occurredAt,
+        correlationId: input.correlationId,
+      });
+    } else if (decision.outcome === "FAIL") {
+      caseRecord = await this.transitionCaseStatus({
+        caseId: input.caseId,
+        nextStatus: "QC_FAILED",
+        occurredAt: input.occurredAt,
+        correlationId: input.correlationId,
+      });
+    }
+
+    return {
+      decision,
+      caseRecord,
+    };
   }
 
   async startAnalysisWorkflowRun(
@@ -920,6 +1004,25 @@ export class HomeGenomeControlPlane {
     }
 
     return normalized.replace(/\\/g, "/");
+  }
+
+  private buildQcMetrics(
+    snapshot: HomeGenomeCaseSnapshot,
+    metrics?: HomeGenomeQcMetrics,
+  ): HomeGenomeQcMetrics {
+    const latestRun = [...snapshot.runs]
+      .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))[0];
+
+    return {
+      estimatedCoverage:
+        metrics?.estimatedCoverage ?? latestRun?.telemetry?.estimatedCoverage,
+      mappedReadPercent: metrics?.mappedReadPercent,
+      contaminationRate: metrics?.contaminationRate,
+      requiresManualReview: metrics?.requiresManualReview,
+      artifactKinds:
+        metrics?.artifactKinds ??
+        snapshot.artifacts.map((artifact) => artifact.kind),
+    };
   }
 
   private toLocalFileAccessUrl(sourceUri: string): string {

@@ -8,6 +8,7 @@ import { InMemoryReferenceBundleRegistry } from "../src/adapters/InMemoryReferen
 import { InMemorySampleRegistry } from "../src/adapters/InMemorySampleRegistry";
 import { InMemorySequencingRunCatalog } from "../src/adapters/InMemorySequencingRunCatalog";
 import { InMemoryStateMachineGuard } from "../src/adapters/InMemoryStateMachineGuard";
+import { ThresholdQcGateEvaluator } from "../src/adapters/ThresholdQcGateEvaluator";
 import { InMemoryWorkflowDispatchSink } from "../src/adapters/InMemoryWorkflowDispatchSink";
 import { NextflowWorkflowRunner } from "../src/adapters/NextflowWorkflowRunner";
 import { IMinKnowClient } from "../src/ports/IMinKnowClient";
@@ -43,6 +44,7 @@ function createControlPlane(
   minKnowClient: IMinKnowClient = createMinKnowClientStub(),
 ): HomeGenomeControlPlane {
   return new HomeGenomeControlPlane({
+    qcGateEvaluator: new ThresholdQcGateEvaluator(),
     sampleRegistry: new InMemorySampleRegistry(),
     sequencingRunCatalog: new InMemorySequencingRunCatalog(),
     artifactStore: new InMemoryArtifactStore(),

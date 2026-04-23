@@ -12,7 +12,7 @@ The repository is not a medical device, not a clinical workflow, and not a perso
 - Repository type: docs-first research project with an early code-bearing runtime slice.
 - Current maturity: architecture corpus plus a minimal Node 24 / TypeScript control plane.
 - Safety boundary: research and technical evaluation only.
-- Publication state: locally GitHub-prepared; provenance and GitHub-side settings still need final review.
+- Publication state: GitHub-published baseline; provenance tightening and GitHub-side settings still need final review.
 
 The formal intended-use boundary is in [docs/reference/intended-use.md](docs/reference/intended-use.md).
 
@@ -51,6 +51,7 @@ The code in `src/` and `tests/` is intentionally narrow. It currently covers:
 - append-only audit events for control-plane actions;
 - workflow dispatch and workflow-run tracking;
 - file-backed durability for events and workflow state;
+- threshold-based QC gate evaluation with explicit pass, fail, and manual-review outcomes;
 - sequencing telemetry ingestion;
 - adaptive sampling updates through an explicit `IMinKnowClient` port.
 - case-level export bundles with RO-Crate metadata and PROV/DRS-compatible fields.
