@@ -49,13 +49,15 @@ The code in `src/` and `tests/` is intentionally narrow. It currently covers:
 - case lifecycle and state-machine enforcement;
 - biosample, sequencing run, artifact, and reference-bundle registration;
 - append-only audit events for control-plane actions;
+- tamper-evident hash chaining for persisted audit events;
 - workflow dispatch and workflow-run tracking;
 - file-backed durability for events and workflow state;
+- hashed reference-bundle manifests for pinned analysis inputs;
 - threshold-based QC gate evaluation with explicit pass, fail, and manual-review outcomes;
 - threshold-based variant and HLA consensus review before interpretation release;
 - sequencing telemetry ingestion;
 - adaptive sampling updates through an explicit `IMinKnowClient` port.
-- case-level export bundles with RO-Crate metadata, PROV/DRS-compatible fields, and a Phenopackets-oriented projection.
+- case-level export bundles with RO-Crate metadata, PROV/DRS-compatible fields, pinned reference-bundle manifests, a canonical bundle checksum, and a Phenopackets-oriented projection.
 
 It does not yet implement a full sequencing operations stack, a MinKNOW adapter, or clinical-grade durability.
 
@@ -66,11 +68,12 @@ Start here if you want the shortest path through the repo:
 1. [docs/reference/intended-use.md](docs/reference/intended-use.md)
 2. [docs/reference/architecture-skeleton-2026-04-21.md](docs/reference/architecture-skeleton-2026-04-21.md)
 3. [docs/reference/case-export-bundle-contract.md](docs/reference/case-export-bundle-contract.md)
-4. [docs/reference/homegenome-control-plane.openapi.yaml](docs/reference/homegenome-control-plane.openapi.yaml)
-5. [docs/reference/standards-adoption-matrix-2026-04-22.md](docs/reference/standards-adoption-matrix-2026-04-22.md)
-6. [docs/reference/pipeline-architecture.md](docs/reference/pipeline-architecture.md)
-7. [docs/how-to/implementation-roadmap-2026-04-21.md](docs/how-to/implementation-roadmap-2026-04-21.md)
-8. [docs/reference/sources-and-provenance.md](docs/reference/sources-and-provenance.md)
+4. [docs/reference/security-threat-model-2026-04-24.md](docs/reference/security-threat-model-2026-04-24.md)
+5. [docs/reference/homegenome-control-plane.openapi.yaml](docs/reference/homegenome-control-plane.openapi.yaml)
+6. [docs/reference/standards-adoption-matrix-2026-04-22.md](docs/reference/standards-adoption-matrix-2026-04-22.md)
+7. [docs/reference/pipeline-architecture.md](docs/reference/pipeline-architecture.md)
+8. [docs/how-to/implementation-roadmap-2026-04-21.md](docs/how-to/implementation-roadmap-2026-04-21.md)
+9. [docs/reference/sources-and-provenance.md](docs/reference/sources-and-provenance.md)
 
 The full docs map is in [docs/README.md](docs/README.md).
 

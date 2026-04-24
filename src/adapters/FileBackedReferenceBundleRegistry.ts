@@ -1,4 +1,5 @@
 import {
+  normalizeReferenceBundleAssets,
   ReferenceBundleRecord,
   RegisterReferenceBundleInput,
   normalizeTimestamp,
@@ -39,6 +40,7 @@ export class FileBackedReferenceBundleRegistry
           version: input.version,
           description: input.description,
           createdAt: normalizeTimestamp(input.createdAt),
+          assets: normalizeReferenceBundleAssets(input.assets),
         };
 
         state[record.bundleId] = record;

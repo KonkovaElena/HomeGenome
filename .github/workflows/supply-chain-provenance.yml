@@ -1,0 +1,100 @@
+name: Supply Chain Provenance
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - v*
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  attest-build:
+    name: Build Bundle And Attest
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Generate runtime SBOM
+        run: npm run sbom:cyclonedx:file
+
+      - name: Package attestable build artifact
+        run: tar -czf homegenome-dist-${{ github.sha }}.tgz dist package.json package-lock.json README.md LICENSE CITATION.cff SECURITY.md CONTRIBUTING.md CODE_OF_CONDUCT.md SUPPORT.md
+
+      - name: Generate checksums
+        run: sha256sum homegenome-dist-${{ github.sha }}.tgz homegenome-runtime-sbom.cdx.json > homegenome-artifacts.sha256
+
+      - name: Upload build bundle
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: homegenome-dist-${{ github.sha }}
+          path: homegenome-dist-${{ github.sha }}.tgz
+          retention-days: 7
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: homegenome-runtime-sbom-${{ github.sha }}
+          path: homegenome-runtime-sbom.cdx.json
+          retention-days: 7
+
+      - name: Upload checksums
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: homegenome-artifacts-sha256-${{ github.sha }}
+          path: homegenome-artifacts.sha256
+          retention-days: 7
+
+      - name: Attest build provenance
+        uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4.1.0
+        with:
+          subject-path: ${{ github.workspace }}/homegenome-dist-${{ github.sha }}.tgz
+
+      - name: Attest SBOM
+        uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4.1.0
+        with:
+          subject-path: ${{ github.workspace }}/homegenome-dist-${{ github.sha }}.tgz
+          sbom-path: ${{ github.workspace }}/homegenome-runtime-sbom.cdx.json
+
+      - name: Publish GitHub release assets
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          if gh release view "$TAG_NAME" > /dev/null 2>&1; then
+            echo "Release $TAG_NAME already exists; skipping create."
+            exit 0
+          fi
+
+          gh release create "$TAG_NAME" \
+            homegenome-dist-${{ github.sha }}.tgz \
+            homegenome-runtime-sbom.cdx.json \
+            homegenome-artifacts.sha256 \
+            --verify-tag \
+            --generate-notes

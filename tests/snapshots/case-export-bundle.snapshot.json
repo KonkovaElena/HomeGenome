@@ -4,6 +4,37 @@
   "caseId": "case-export-001",
   "generatedAt": "2026-04-22T08:11:00.000Z",
   "generatedBy": "operator-export-001",
+  "auditCheckpoint": {
+    "aggregateId": "case-export-001",
+    "generatedAt": "2026-04-22T08:11:00.000Z",
+    "eventCount": 14,
+    "latestVersion": 14,
+    "firstEventHash": "sha256:54e2ae9e0c74b400a70b562e4bbc8dfd6238198f095203bf1844c68485e1d3b6",
+    "lastEventHash": "sha256:d34f3a1d023d2feff6f9f8b04ee2ec81579a3ce5291126609460360094879a97",
+    "checkpointHash": "sha256:06ef63a50d5d9f49345812f05ef6984904a50a5e61b696962c9ed66755aaf2ef"
+  },
+  "referenceBundles": [
+    {
+      "bundleId": "bundle-export-001",
+      "name": "GRCh38 bundle",
+      "version": "2026.04",
+      "createdAt": "2026-04-22T08:03:00.000Z",
+      "assets": [
+        {
+          "assetId": "grch38-fasta",
+          "role": "REFERENCE_FASTA",
+          "uri": "references/grch38.fa.gz",
+          "checksum": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+        },
+        {
+          "assetId": "grch38-fai",
+          "role": "REFERENCE_INDEX",
+          "uri": "references/grch38.fa.gz.fai",
+          "checksum": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        }
+      ]
+    }
+  ],
   "phenopacket": {
     "id": "case-export-001",
     "subject": {
@@ -157,6 +188,11 @@
         "prov:type": "prov:Entity",
         "prov:label": "HomeGenome Export Bundle homegenome-export-bundle-001"
       },
+      "urn:homegenome:reference-bundle:bundle-export-001": {
+        "prov:type": "prov:Entity",
+        "prov:label": "Reference Bundle bundle-export-001",
+        "prov:value": "2026.04"
+      },
       "urn:homegenome:artifact:artifact-export-001": {
         "prov:type": "prov:Entity",
         "prov:label": "artifact-export-001"
@@ -189,6 +225,10 @@
       },
       "_:used-2": {
         "prov:activity": "urn:homegenome:activity:bundle-export:case-export-001:2026-04-22T08:11:00.000Z",
+        "prov:entity": "urn:homegenome:reference-bundle:bundle-export-001"
+      },
+      "_:used-3": {
+        "prov:activity": "urn:homegenome:activity:bundle-export:case-export-001:2026-04-22T08:11:00.000Z",
         "prov:entity": "urn:homegenome:artifact:artifact-export-001"
       }
     },
@@ -204,6 +244,10 @@
         "prov:usedEntity": "urn:homegenome:case:case-export-001"
       },
       "_:derived-2": {
+        "prov:generatedEntity": "urn:homegenome:bundle:homegenome-export-bundle-001",
+        "prov:usedEntity": "urn:homegenome:reference-bundle:bundle-export-001"
+      },
+      "_:derived-3": {
         "prov:generatedEntity": "urn:homegenome:bundle:homegenome-export-bundle-001",
         "prov:usedEntity": "urn:homegenome:artifact:artifact-export-001"
       }
@@ -287,7 +331,8 @@
           "subjectId": "subject-export-001",
           "status": "INTAKE_PENDING"
         },
-        "version": 1
+        "version": 1,
+        "eventHash": "sha256:54e2ae9e0c74b400a70b562e4bbc8dfd6238198f095203bf1844c68485e1d3b6"
       },
       {
         "aggregateId": "case-export-001",
@@ -297,7 +342,9 @@
           "previousStatus": "INTAKE_PENDING",
           "nextStatus": "BIOSAMPLE_REGISTERED"
         },
-        "version": 2
+        "version": 2,
+        "previousEventHash": "sha256:54e2ae9e0c74b400a70b562e4bbc8dfd6238198f095203bf1844c68485e1d3b6",
+        "eventHash": "sha256:addaee887bf64b6a81e00572d23a1a13eb0ba7d803aacbb693eb82ef911ebe41"
       },
       {
         "aggregateId": "case-export-001",
@@ -307,7 +354,9 @@
           "sampleId": "sample-export-001",
           "sampleType": "saliva"
         },
-        "version": 3
+        "version": 3,
+        "previousEventHash": "sha256:addaee887bf64b6a81e00572d23a1a13eb0ba7d803aacbb693eb82ef911ebe41",
+        "eventHash": "sha256:dc591615cd3cd80f2cbf751b6259f88f487e8c2c8558f0a7e32af212f0301fd0"
       },
       {
         "aggregateId": "case-export-001",
@@ -317,7 +366,9 @@
           "previousStatus": "BIOSAMPLE_REGISTERED",
           "nextStatus": "SEQUENCING_REQUESTED"
         },
-        "version": 4
+        "version": 4,
+        "previousEventHash": "sha256:dc591615cd3cd80f2cbf751b6259f88f487e8c2c8558f0a7e32af212f0301fd0",
+        "eventHash": "sha256:86d38ee4acf7bc3631b3b78992be45260544ef8d0eb0582bc443f39b4c0fe259"
       },
       {
         "aggregateId": "case-export-001",
@@ -329,7 +380,9 @@
           "platform": "ONT_MINION",
           "referenceBundleId": "bundle-export-001"
         },
-        "version": 5
+        "version": 5,
+        "previousEventHash": "sha256:86d38ee4acf7bc3631b3b78992be45260544ef8d0eb0582bc443f39b4c0fe259",
+        "eventHash": "sha256:c69f81e7270cac9ea46b119d4b75e65cd789c5571211075648dea67c7881fe2d"
       },
       {
         "aggregateId": "case-export-001",
@@ -339,7 +392,9 @@
           "previousStatus": "SEQUENCING_REQUESTED",
           "nextStatus": "SEQUENCING_RUNNING"
         },
-        "version": 6
+        "version": 6,
+        "previousEventHash": "sha256:c69f81e7270cac9ea46b119d4b75e65cd789c5571211075648dea67c7881fe2d",
+        "eventHash": "sha256:1008479c5bba124baf39c8e3954de87ab8c77ec74a0dc3ab2102e7e43ddb7d11"
       },
       {
         "aggregateId": "case-export-001",
@@ -349,7 +404,9 @@
           "runId": "run-export-001",
           "status": "RUNNING"
         },
-        "version": 7
+        "version": 7,
+        "previousEventHash": "sha256:1008479c5bba124baf39c8e3954de87ab8c77ec74a0dc3ab2102e7e43ddb7d11",
+        "eventHash": "sha256:2e93f03b25ce14c1fdefd8c7a3cf8634c01bfd92061149eb01b8853235c1e726"
       },
       {
         "aggregateId": "case-export-001",
@@ -359,7 +416,9 @@
           "previousStatus": "SEQUENCING_RUNNING",
           "nextStatus": "RAW_ARTIFACTS_CAPTURED"
         },
-        "version": 8
+        "version": 8,
+        "previousEventHash": "sha256:2e93f03b25ce14c1fdefd8c7a3cf8634c01bfd92061149eb01b8853235c1e726",
+        "eventHash": "sha256:d8567e615ab24ae86752d6433be4ac726e7b3b47840d74283f942323e7045a4b"
       },
       {
         "aggregateId": "case-export-001",
@@ -372,7 +431,9 @@
           "checksum": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
           "runId": "run-export-001"
         },
-        "version": 9
+        "version": 9,
+        "previousEventHash": "sha256:d8567e615ab24ae86752d6433be4ac726e7b3b47840d74283f942323e7045a4b",
+        "eventHash": "sha256:e57aaa8d06a505b02d6de494fcebba7363f8603633f25613939289df8c8a4334"
       },
       {
         "aggregateId": "case-export-001",
@@ -382,7 +443,9 @@
           "previousStatus": "RAW_ARTIFACTS_CAPTURED",
           "nextStatus": "QC_PENDING"
         },
-        "version": 10
+        "version": 10,
+        "previousEventHash": "sha256:e57aaa8d06a505b02d6de494fcebba7363f8603633f25613939289df8c8a4334",
+        "eventHash": "sha256:a2a91e0e1e18c6d1a48c518ab1776bafde98f428754349b81714efb4dcbe9ef2"
       },
       {
         "aggregateId": "case-export-001",
@@ -392,7 +455,9 @@
           "previousStatus": "QC_PENDING",
           "nextStatus": "QC_PASSED"
         },
-        "version": 11
+        "version": 11,
+        "previousEventHash": "sha256:a2a91e0e1e18c6d1a48c518ab1776bafde98f428754349b81714efb4dcbe9ef2",
+        "eventHash": "sha256:19d1361dd6cb5b85276a8097d71f4df6239a8cc236b03f95fc47162d4f601891"
       },
       {
         "aggregateId": "case-export-001",
@@ -405,7 +470,9 @@
           "referenceBundleId": "bundle-export-001",
           "executionProfile": "local-ont"
         },
-        "version": 12
+        "version": 12,
+        "previousEventHash": "sha256:19d1361dd6cb5b85276a8097d71f4df6239a8cc236b03f95fc47162d4f601891",
+        "eventHash": "sha256:dc5605cf45acd8196618f514d7490d3bf3bc1eb4de6e34911a9a46dea6b982ab"
       },
       {
         "aggregateId": "case-export-001",
@@ -415,7 +482,9 @@
           "previousStatus": "QC_PASSED",
           "nextStatus": "PRIMARY_ANALYSIS_RUNNING"
         },
-        "version": 13
+        "version": 13,
+        "previousEventHash": "sha256:dc5605cf45acd8196618f514d7490d3bf3bc1eb4de6e34911a9a46dea6b982ab",
+        "eventHash": "sha256:c51232eaa8cd0654a438a83e1587c2aba6c3c9de1cf295ebd86289b3eeea283b"
       },
       {
         "aggregateId": "case-export-001",
@@ -426,8 +495,11 @@
           "runId": "analysis-run-export-001",
           "workflowName": "wf-human-variation"
         },
-        "version": 14
+        "version": 14,
+        "previousEventHash": "sha256:c51232eaa8cd0654a438a83e1587c2aba6c3c9de1cf295ebd86289b3eeea283b",
+        "eventHash": "sha256:d34f3a1d023d2feff6f9f8b04ee2ec81579a3ce5291126609460360094879a97"
       }
     ]
-  }
+  },
+  "bundleChecksum": "sha256:6f092ef563de0bfdc71567f06ed8e00df76de6e13f17f48c48049b43f8428461"
 }

@@ -9,6 +9,10 @@ import {
   withFileLock,
   writeJsonStoreAtomic,
 } from "./fileStoreSupport";
+import {
+  assertValidEventChain,
+  createTamperEvidentEventRecord,
+} from "./eventStoreHashChain";
 
 type EventStoreState<TEventInput extends EventStoreAppendInput> = Record<
   string,
@@ -34,6 +38,7 @@ export class FileBackedEventStore<
       withFileLock(this.filePath, async () => {
         const state = await this.readState();
         const current = state[aggregateId] ?? [];
+        assertValidEventChain(current, aggregateId);
 
         if (current.length !== expectedVersion) {
           throw new Error(
@@ -41,12 +46,18 @@ export class FileBackedEventStore<
           );
         }
 
-        const appended = events.map<PersistedEventRecord<TEventInput>>(
-          (event, index) => ({
-            ...event,
-            version: expectedVersion + index + 1,
-          }),
-        );
+        const appended: PersistedEventRecord<TEventInput>[] = [];
+        let previousEventHash = current.at(-1)?.eventHash;
+
+        for (const [index, event] of events.entries()) {
+          const persisted = createTamperEvidentEventRecord(
+            event,
+            expectedVersion + index + 1,
+            previousEventHash,
+          );
+          appended.push(persisted);
+          previousEventHash = persisted.eventHash;
+        }
 
         state[aggregateId] = [...current, ...appended];
         await writeJsonStoreAtomic(this.filePath, state);
@@ -63,12 +74,16 @@ export class FileBackedEventStore<
     aggregateId: string,
   ): Promise<ReadonlyArray<PersistedEventRecord<TEventInput>>> {
     const state = await this.readState();
-    return [...(state[aggregateId] ?? [])];
+    const current = [...(state[aggregateId] ?? [])];
+    assertValidEventChain(current, aggregateId);
+    return current;
   }
 
   async getLatestVersion(aggregateId: string): Promise<number> {
     const state = await this.readState();
-    return (state[aggregateId] ?? []).length;
+    const current = state[aggregateId] ?? [];
+    assertValidEventChain(current, aggregateId);
+    return current.length;
   }
 
   private async readState(): Promise<EventStoreState<TEventInput>> {

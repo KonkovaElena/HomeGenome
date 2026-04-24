@@ -17,6 +17,22 @@ import { IMinKnowClient } from "../src/ports/IMinKnowClient";
 
 const WORKFLOW_ARTIFACT_CHECKSUM =
   "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd";
+const DEFAULT_REFERENCE_BUNDLE_ASSETS = [
+  {
+    assetId: "grch38-fasta",
+    role: "REFERENCE_FASTA",
+    uri: "references/grch38.fa.gz",
+    checksum:
+      "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+  },
+  {
+    assetId: "grch38-fai",
+    role: "REFERENCE_INDEX",
+    uri: "references/grch38.fa.gz.fai",
+    checksum:
+      "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+  },
+] as const;
 
 function createMinKnowClientStub(): IMinKnowClient {
   return {
@@ -83,6 +99,7 @@ async function prepareQcPassedCase(
     bundleId: `${caseId}-bundle`,
     name: "GRCh38 bundle",
     version: "2026.04",
+    assets: DEFAULT_REFERENCE_BUNDLE_ASSETS,
     createdAt: "2026-04-21T12:03:00.000Z",
   });
 
@@ -238,6 +255,7 @@ test("control plane rejects workflow requests before QC passes", async () => {
     bundleId: "bundle-workflow-guard-001",
     name: "GRCh38 bundle",
     version: "2026.04",
+    assets: DEFAULT_REFERENCE_BUNDLE_ASSETS,
     createdAt: "2026-04-21T13:01:00.000Z",
   });
 

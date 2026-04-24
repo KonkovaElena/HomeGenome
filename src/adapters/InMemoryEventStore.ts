@@ -3,6 +3,10 @@ import {
   IEventStore,
   PersistedEventRecord,
 } from "../ports/IEventStore";
+import {
+  assertValidEventChain,
+  createTamperEvidentEventRecord,
+} from "./eventStoreHashChain";
 
 export class InMemoryEventStore<
   TEventInput extends EventStoreAppendInput,
@@ -19,6 +23,7 @@ export class InMemoryEventStore<
     events: readonly TEventInput[],
   ): Promise<ReadonlyArray<PersistedEventRecord<TEventInput>>> {
     const current = this.events.get(aggregateId) ?? [];
+    assertValidEventChain(current, aggregateId);
 
     if (current.length !== expectedVersion) {
       throw new Error(
@@ -26,12 +31,18 @@ export class InMemoryEventStore<
       );
     }
 
-    const appended = events.map<PersistedEventRecord<TEventInput>>(
-      (event, index) => ({
-        ...event,
-        version: expectedVersion + index + 1,
-      }),
-    );
+    const appended: PersistedEventRecord<TEventInput>[] = [];
+    let previousEventHash = current.at(-1)?.eventHash;
+
+    for (const [index, event] of events.entries()) {
+      const persisted = createTamperEvidentEventRecord(
+        event,
+        expectedVersion + index + 1,
+        previousEventHash,
+      );
+      appended.push(persisted);
+      previousEventHash = persisted.eventHash;
+    }
 
     this.events.set(aggregateId, [...current, ...appended]);
     return appended;
@@ -40,10 +51,14 @@ export class InMemoryEventStore<
   async listByAggregateId(
     aggregateId: string,
   ): Promise<ReadonlyArray<PersistedEventRecord<TEventInput>>> {
-    return [...(this.events.get(aggregateId) ?? [])];
+    const current = [...(this.events.get(aggregateId) ?? [])];
+    assertValidEventChain(current, aggregateId);
+    return current;
   }
 
   async getLatestVersion(aggregateId: string): Promise<number> {
-    return (this.events.get(aggregateId) ?? []).length;
+    const current = this.events.get(aggregateId) ?? [];
+    assertValidEventChain(current, aggregateId);
+    return current.length;
   }
 }

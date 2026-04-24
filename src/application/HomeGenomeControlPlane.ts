@@ -252,12 +252,25 @@ export interface PhenopacketRecord {
   metaData: PhenopacketMetaDataRecord;
 }
 
+export interface AuditCheckpointDigest {
+  aggregateId: string;
+  generatedAt: string;
+  eventCount: number;
+  latestVersion: number;
+  firstEventHash?: string;
+  lastEventHash?: string;
+  checkpointHash: string;
+}
+
 export interface CaseExportBundle {
   schemaVersion: "1.0.0";
   bundleId: string;
   caseId: string;
   generatedAt: string;
   generatedBy: string;
+  bundleChecksum: string;
+  auditCheckpoint: AuditCheckpointDigest;
+  referenceBundles: ReadonlyArray<ReferenceBundleRecord>;
   phenopacket: PhenopacketRecord;
   roCrateMetadata: {
     "@context": "https://w3id.org/ro/crate/1.1/context";
@@ -838,6 +851,22 @@ export class HomeGenomeControlPlane {
     const exportAgentId =
       `urn:homegenome:agent:${encodeURIComponent(generatedBy)}`;
     const bundleEntityId = `urn:homegenome:bundle:${bundleId}`;
+    const auditCheckpoint = this.toAuditCheckpoint(
+      snapshot.caseRecord.caseId,
+      snapshot.events,
+      generatedAt,
+    );
+    const referenceBundles = await this.listReferencedBundles(snapshot);
+    const referenceBundleEntities = Object.fromEntries(
+      referenceBundles.map((bundle) => [
+        `urn:homegenome:reference-bundle:${bundle.bundleId}`,
+        {
+          "prov:type": "prov:Entity",
+          "prov:label": `Reference Bundle ${bundle.bundleId}`,
+          "prov:value": bundle.version,
+        },
+      ]),
+    );
 
     const drsObjects = snapshot.artifacts.map((artifact) =>
       this.toDrsObject(artifact),
@@ -914,7 +943,13 @@ export class HomeGenomeControlPlane {
     }
 
     const usedRelations = Object.fromEntries(
-      [caseEntityId, ...snapshot.artifacts.map((artifact) => `urn:homegenome:artifact:${artifact.artifactId}`)].map(
+      [
+        caseEntityId,
+        ...referenceBundles.map(
+          (bundle) => `urn:homegenome:reference-bundle:${bundle.bundleId}`,
+        ),
+        ...snapshot.artifacts.map((artifact) => `urn:homegenome:artifact:${artifact.artifactId}`),
+      ].map(
         (entityId, index) => [
           `_:used-${index + 1}`,
           {
@@ -926,7 +961,13 @@ export class HomeGenomeControlPlane {
     );
 
     const derivedRelations = Object.fromEntries(
-      [caseEntityId, ...snapshot.artifacts.map((artifact) => `urn:homegenome:artifact:${artifact.artifactId}`)].map(
+      [
+        caseEntityId,
+        ...referenceBundles.map(
+          (bundle) => `urn:homegenome:reference-bundle:${bundle.bundleId}`,
+        ),
+        ...snapshot.artifacts.map((artifact) => `urn:homegenome:artifact:${artifact.artifactId}`),
+      ].map(
         (entityId, index) => [
           `_:derived-${index + 1}`,
           {
@@ -947,12 +988,14 @@ export class HomeGenomeControlPlane {
       ]),
     );
 
-    return {
+    const bundleDraft: Omit<CaseExportBundle, "bundleChecksum"> = {
       schemaVersion: "1.0.0",
       bundleId,
       caseId: snapshot.caseRecord.caseId,
       generatedAt,
       generatedBy,
+      auditCheckpoint,
+      referenceBundles,
       phenopacket: this.toPhenopacket(snapshot, generatedAt, generatedBy, drsObjects),
       roCrateMetadata: {
         "@context": "https://w3id.org/ro/crate/1.1/context",
@@ -971,6 +1014,7 @@ export class HomeGenomeControlPlane {
             "prov:type": "prov:Entity",
             "prov:label": `HomeGenome Export Bundle ${bundleId}`,
           },
+          ...referenceBundleEntities,
           ...artifactEntities,
         },
         activity: {
@@ -1005,6 +1049,11 @@ export class HomeGenomeControlPlane {
         wasDerivedFrom: derivedRelations,
       },
       snapshot,
+    };
+
+    return {
+      ...bundleDraft,
+      bundleChecksum: this.computeBundleChecksum(bundleDraft),
     };
   }
 
@@ -1058,6 +1107,40 @@ export class HomeGenomeControlPlane {
     }
 
     return dispatch;
+  }
+
+  private async requireReferenceBundle(
+    bundleId: string,
+  ): Promise<ReferenceBundleRecord> {
+    const bundle = await this.deps.referenceBundleRegistry.getBundle(bundleId);
+
+    if (!bundle) {
+      throw new Error(`Unknown reference bundle: ${bundleId}`);
+    }
+
+    return bundle;
+  }
+
+  private async listReferencedBundles(
+    snapshot: HomeGenomeCaseSnapshot,
+  ): Promise<ReadonlyArray<ReferenceBundleRecord>> {
+    const bundleIds = [
+      ...snapshot.runs.map((run) => run.referenceBundleId),
+      ...snapshot.workflowDispatches.map((dispatch) => dispatch.referenceBundleId),
+      ...snapshot.workflowRuns.map((run) => run.referenceBundleId),
+    ];
+
+    const uniqueBundleIds = [
+      ...new Set(
+        bundleIds.filter((bundleId): bundleId is string => Boolean(bundleId?.trim())),
+      ),
+    ].sort((left, right) => left.localeCompare(right));
+
+    const bundles = await Promise.all(
+      uniqueBundleIds.map((bundleId) => this.requireReferenceBundle(bundleId)),
+    );
+
+    return bundles;
   }
 
   private toDrsObject(artifact: ArtifactManifestRecord): CaseBundleDrsObject {
@@ -1221,6 +1304,58 @@ export class HomeGenomeControlPlane {
         ],
       },
     };
+  }
+
+  private computeBundleChecksum(
+    bundleDraft: Omit<CaseExportBundle, "bundleChecksum">,
+  ): string {
+    const canonicalJson = JSON.stringify(
+      this.toCanonicalJsonValue(bundleDraft),
+    );
+
+    return `sha256:${createHash("sha256").update(canonicalJson).digest("hex")}`;
+  }
+
+  private toAuditCheckpoint(
+    aggregateId: string,
+    events: ReadonlyArray<HomeGenomeAuditEventRecord>,
+    generatedAt: string,
+  ): AuditCheckpointDigest {
+    const firstEventHash = events[0]?.eventHash;
+    const lastEventHash = events.at(-1)?.eventHash;
+    const latestVersion = events.at(-1)?.version ?? 0;
+    const checkpointDraft: Omit<AuditCheckpointDigest, "checkpointHash"> = {
+      aggregateId,
+      generatedAt,
+      eventCount: events.length,
+      latestVersion,
+      firstEventHash,
+      lastEventHash,
+    };
+
+    return {
+      ...checkpointDraft,
+      checkpointHash: `sha256:${createHash("sha256")
+        .update(JSON.stringify(this.toCanonicalJsonValue(checkpointDraft)))
+        .digest("hex")}`,
+    };
+  }
+
+  private toCanonicalJsonValue(value: unknown): unknown {
+    if (Array.isArray(value)) {
+      return value.map((entry) => this.toCanonicalJsonValue(entry));
+    }
+
+    if (value && typeof value === "object") {
+      return Object.fromEntries(
+        Object.entries(value as Record<string, unknown>)
+          .filter(([, entryValue]) => entryValue !== undefined)
+          .sort(([left], [right]) => left.localeCompare(right))
+          .map(([key, entryValue]) => [key, this.toCanonicalJsonValue(entryValue)]),
+      );
+    }
+
+    return value;
   }
 
   private toLocalFileAccessUrl(sourceUri: string): string {

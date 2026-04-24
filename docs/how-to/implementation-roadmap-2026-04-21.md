@@ -121,6 +121,7 @@ Deliverables:
 Bridge to interoperability:
 
 - keep `CaseExportBundle` aligned with `RO-Crate`, `W3C PROV-O`, and DRS-like artifact identifiers so later GA4GH export layers are additive rather than disruptive.
+- keep reference inputs pinned and export bundles self-verifiable so later interoperability layers do not lose reproducibility when moved between environments.
 
 Это фаза, где HomeGenome перестаёт быть просто run-tracker и становится evidence-aware genomics system.
 
@@ -179,6 +180,8 @@ Deliverables:
 Статус:
 
 - `CaseExportBundle.phenopacket` now emits a minimal Phenopackets-oriented projection with `subject`, `biosamples`, `files`, `interpretations`, and `metaData`.
+- `CaseExportBundle.referenceBundles[]` now exports hashed reference bundle manifests instead of only bundle IDs.
+- `CaseExportBundle.bundleChecksum` now emits a canonical SHA-256 digest for the export payload itself.
 - the current shape is intentionally additive and conservative; full schema-complete Phenopackets parity remains future interoperability work.
 
 ## Phase 7. Horizon Integrations

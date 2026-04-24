@@ -1,8 +1,8 @@
 ---
 title: "HomeGenome Standards Adoption Matrix"
 status: "active"
-version: "1.1.0"
-last_updated: "2026-04-23"
+version: "1.3.0"
+last_updated: "2026-04-24"
 tags: [homegenome, standards, ga4gh, ro-crate, prov, slsa, security]
 mode: "reference"
 ---
@@ -34,6 +34,10 @@ It separates:
 | Provenance representation | W3C PROV-compatible summary | `implemented` | `exportCaseBundle()` emits `prov` with entity/activity/agent/wasDerivedFrom. |
 | Artifact addressing | DRS-like object references | `implemented` | Artifact list is projected to `drs://homegenome/...` URIs with stable object IDs. |
 | Artifact integrity | Mandatory sha256 artifact hashing | `implemented` | Artifact registration now requires normalized `sha256:*` digests before export. |
+| Reference input pinning | Hashed reference bundle manifests | `implemented` | `registerReferenceBundle()` now requires `assets[]` with normalized `sha256:*` checksums, and `exportCaseBundle()` emits them in `referenceBundles[]`. |
+| Bundle self-verification | Canonical export bundle checksum | `implemented` | `bundleChecksum` is emitted as a SHA-256 digest over canonical JSON for the exported bundle payload. |
+| Audit integrity | Tamper-evident append-only event chain | `implemented` | Persisted audit events now carry `eventHash` and `previousEventHash`, and the chain is validated on append and read. |
+| Attestation bridge | Export-time audit checkpoint digest | `implemented` | `auditCheckpoint` emits a stable digest anchor over the current audit chain for later external signing or attestation. |
 | Workflow run provenance | Workflow-run crate projection | `implemented` | `workflowRunCrates[]` emitted per workflow run in bundle export. |
 | Reproducible orchestration | Nextflow runner seam | `implemented` | `IAnalysisWorkflowRunner` + `NextflowWorkflowRunner` already in baseline. |
 | Telemetry control | MinKNOW telemetry/adaptive sampling seam | `implemented` | `IMinKnowClient` + control-plane methods are wired and tested. |
@@ -56,6 +60,8 @@ It separates:
 ## Implemented Anchors
 
 - Code: `src/application/HomeGenomeControlPlane.ts`
+- Reference manifests: `src/domain/homeGenome.ts`, `src/adapters/InMemoryReferenceBundleRegistry.ts`, `src/adapters/FileBackedReferenceBundleRegistry.ts`
+- Audit integrity: `src/ports/IEventStore.ts`, `src/adapters/eventStoreHashChain.ts`, `src/adapters/InMemoryEventStore.ts`, `src/adapters/FileBackedEventStore.ts`
 - QC policy: `src/ports/IQcGateEvaluator.ts`, `src/adapters/ThresholdQcGateEvaluator.ts`
 - Consensus policy: `src/ports/IVariantConsensusProvider.ts`, `src/ports/IHlaTypingConsensusProvider.ts`, `src/adapters/ThresholdVariantConsensusProvider.ts`, `src/adapters/ThresholdHlaTypingConsensusProvider.ts`
 - Test trap: `tests/homegenome-control-plane.test.ts`

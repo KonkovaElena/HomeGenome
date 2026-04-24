@@ -1,8 +1,8 @@
 ---
 title: "HomeGenome Intended Use"
 status: "active"
-version: "1.0.0"
-last_updated: "2026-04-21"
+version: "1.1.0"
+last_updated: "2026-04-24"
 tags: [homegenome, intended-use, genomics, boundary]
 mode: "reference"
 ---
@@ -75,3 +75,5 @@ It is not part of the current HomeGenome baseline and must not be read as:
 ## Operating Rule
 
 If a future contribution expands HomeGenome toward executable software, that change should remain compatible with this intended-use boundary or update this document explicitly in the same change set.
+
+The adjacent operator-security posture is tracked in [security-threat-model-2026-04-24.md](security-threat-model-2026-04-24.md).

@@ -1,8 +1,8 @@
 ---
 title: "HomeGenome Research And Safety Boundary"
 status: "active"
-version: "1.0.0"
-last_updated: "2026-04-21"
+version: "1.1.0"
+last_updated: "2026-04-24"
 tags: [homegenome, safety, boundary, medical, biosecurity]
 mode: "reference"
 ---
@@ -77,5 +77,7 @@ Contributors should avoid adding text that:
 ## Default Reader Guidance
 
 If you are here because you want to understand the technology, start with [README.md](README.md) and the reference documents.
+
+For the current operator-facing security posture, see [security-threat-model-2026-04-24.md](security-threat-model-2026-04-24.md).
 
 If you are here because you need medical interpretation of your own data, this repository is the wrong tool and the wrong venue.

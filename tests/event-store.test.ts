@@ -28,11 +28,16 @@ test("event store appends events with monotonic versions", async () => {
     appended.map((event) => event.version),
     [1, 2],
   );
+  assert.match(appended[0].eventHash, /^sha256:[a-f0-9]{64}$/);
+  assert.equal(appended[0].previousEventHash, undefined);
+  assert.equal(appended[1].previousEventHash, appended[0].eventHash);
+  assert.match(appended[1].eventHash, /^sha256:[a-f0-9]{64}$/);
 
   const stored = await store.listByAggregateId("case-001");
 
   assert.equal(stored.length, 2);
   assert.equal(stored[1].type, "CASE_UPDATED");
+  assert.equal(stored[1].previousEventHash, stored[0].eventHash);
 });
 
 test("event store rejects optimistic concurrency mismatches", async () => {

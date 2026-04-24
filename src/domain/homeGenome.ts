@@ -262,6 +262,14 @@ export interface ReferenceBundleRecord {
   version: string;
   description?: string;
   createdAt: string;
+  assets: ReadonlyArray<ReferenceBundleAssetRecord>;
+}
+
+export interface ReferenceBundleAssetRecord {
+  assetId: string;
+  role: string;
+  uri: string;
+  checksum: string;
 }
 
 export interface RegisterReferenceBundleInput {
@@ -270,6 +278,7 @@ export interface RegisterReferenceBundleInput {
   version: string;
   description?: string;
   createdAt?: string;
+  assets: ReadonlyArray<ReferenceBundleAssetRecord>;
 }
 
 export const ANALYSIS_WORKFLOW_RUN_STATUSES = [
@@ -386,14 +395,53 @@ export function isRawCaptureArtifact(kind: ArtifactKind): boolean {
 
 const SHA256_CHECKSUM_PATTERN = /^sha256:[a-f0-9]{64}$/i;
 
-export function normalizeSha256Checksum(value: string | undefined): string {
+export function normalizeSha256Checksum(
+  value: string | undefined,
+  label = "Artifact checksum",
+): string {
   const normalized = value?.trim().toLowerCase();
 
   if (!normalized || !SHA256_CHECKSUM_PATTERN.test(normalized)) {
     throw new Error(
-      "Artifact checksum must be a sha256 digest prefixed with 'sha256:'",
+      `${label} must be a sha256 digest prefixed with 'sha256:'`,
     );
   }
 
   return normalized;
+}
+
+export function normalizeReferenceBundleAssets(
+  assets: ReadonlyArray<ReferenceBundleAssetRecord> | undefined,
+): ReadonlyArray<ReferenceBundleAssetRecord> {
+  if (!assets || assets.length === 0) {
+    throw new Error("Reference bundle must include at least one manifest asset");
+  }
+
+  return assets.map((asset) => {
+    const assetId = asset.assetId?.trim();
+    const role = asset.role?.trim();
+    const uri = asset.uri?.trim();
+
+    if (!assetId) {
+      throw new Error("Reference bundle assetId is required");
+    }
+
+    if (!role) {
+      throw new Error(`Reference bundle asset role is required: ${assetId}`);
+    }
+
+    if (!uri) {
+      throw new Error(`Reference bundle asset uri is required: ${assetId}`);
+    }
+
+    return {
+      assetId,
+      role,
+      uri,
+      checksum: normalizeSha256Checksum(
+        asset.checksum,
+        "Reference bundle asset checksum",
+      ),
+    };
+  });
 }

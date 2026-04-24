@@ -25,6 +25,22 @@ const EXPORT_SIGNAL_CHECKSUM =
   "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
 const EXPORT_SIGNAL_DRS_ID =
   "sha256-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
+const DEFAULT_REFERENCE_BUNDLE_ASSETS = [
+  {
+    assetId: "grch38-fasta",
+    role: "REFERENCE_FASTA",
+    uri: "references/grch38.fa.gz",
+    checksum:
+      "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+  },
+  {
+    assetId: "grch38-fai",
+    role: "REFERENCE_INDEX",
+    uri: "references/grch38.fa.gz.fai",
+    checksum:
+      "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+  },
+] as const;
 
 function createMinKnowClientStub(): IMinKnowClient {
   return {
@@ -101,6 +117,7 @@ test("control plane evaluates qc metrics and advances a case to qc passed", asyn
     bundleId: "bundle-qc-pass-001",
     name: "GRCh38 qc bundle",
     version: "2026.04",
+    assets: DEFAULT_REFERENCE_BUNDLE_ASSETS,
     createdAt: "2026-04-23T18:13:00.000Z",
   });
 
@@ -173,6 +190,7 @@ test("control plane tracks a minimal HomeGenome case lifecycle", async () => {
     bundleId: "bundle-grch38-v1",
     name: "GRCh38 core bundle",
     version: "2026.04",
+    assets: DEFAULT_REFERENCE_BUNDLE_ASSETS,
     createdAt: "2026-04-21T10:07:00.000Z",
   });
 
@@ -256,6 +274,7 @@ test("control plane rejects artifacts without a normalized sha256 checksum", asy
     bundleId: "bundle-checksum-guard-001",
     name: "GRCh38 bundle",
     version: "2026.04",
+    assets: DEFAULT_REFERENCE_BUNDLE_ASSETS,
     createdAt: "2026-04-22T07:03:00.000Z",
   });
 
@@ -297,6 +316,7 @@ test("control plane rejects sequencing runs that reference unknown samples", asy
     bundleId: "bundle-grch38-v2",
     name: "GRCh38 bundle v2",
     version: "2026.04.1",
+    assets: DEFAULT_REFERENCE_BUNDLE_ASSETS,
     createdAt: "2026-04-21T11:02:00.000Z",
   });
 
@@ -442,6 +462,29 @@ test("control plane rejects stale case status transitions when state changes bet
   );
 });
 
+test("control plane rejects reference bundles with non-normalized asset checksums", async () => {
+  const controlPlane = createControlPlane();
+
+  await assert.rejects(
+    () =>
+      controlPlane.registerReferenceBundle({
+        bundleId: "bundle-invalid-reference-001",
+        name: "GRCh38 invalid bundle",
+        version: "2026.04",
+        createdAt: "2026-04-23T12:20:00.000Z",
+        assets: [
+          {
+            assetId: "grch38-fasta-invalid",
+            role: "REFERENCE_FASTA",
+            uri: "references/grch38.fa.gz",
+            checksum: "sha256:abc123",
+          },
+        ],
+      }),
+    /sha256 digest/i,
+  );
+});
+
 test("control plane stores sequencing telemetry when run status updates", async () => {
   const controlPlane = createControlPlane();
 
@@ -463,6 +506,7 @@ test("control plane stores sequencing telemetry when run status updates", async 
     bundleId: "bundle-telemetry-001",
     name: "GRCh38 bundle",
     version: "2026.04",
+    assets: DEFAULT_REFERENCE_BUNDLE_ASSETS,
     createdAt: "2026-04-21T16:03:00.000Z",
   });
 
@@ -552,6 +596,7 @@ test("control plane applies adaptive sampling targets through MinKNOW for active
     bundleId: "bundle-adaptive-001",
     name: "GRCh38 bundle",
     version: "2026.04",
+    assets: DEFAULT_REFERENCE_BUNDLE_ASSETS,
     createdAt: "2026-04-21T16:13:00.000Z",
   });
 
@@ -606,6 +651,7 @@ test("control plane rejects adaptive sampling when sequencing run is not active"
     bundleId: "bundle-adaptive-guard-001",
     name: "GRCh38 bundle",
     version: "2026.04",
+    assets: DEFAULT_REFERENCE_BUNDLE_ASSETS,
     createdAt: "2026-04-21T16:23:00.000Z",
   });
 
@@ -652,6 +698,7 @@ test("control plane exports a case bundle with RO-Crate, PROV, and DRS reference
     bundleId: "bundle-export-001",
     name: "GRCh38 bundle",
     version: "2026.04",
+    assets: DEFAULT_REFERENCE_BUNDLE_ASSETS,
     createdAt: "2026-04-22T08:03:00.000Z",
   });
 
@@ -724,11 +771,29 @@ test("control plane exports a case bundle with RO-Crate, PROV, and DRS reference
   assert.equal(bundle.schemaVersion, "1.0.0");
   assert.equal(bundle.caseId, "case-export-001");
   assert.equal(bundle.bundleId, "homegenome-export-bundle-001");
+  assert.match(bundle.bundleChecksum, /^sha256:[a-f0-9]{64}$/);
+  assert.equal(bundle.auditCheckpoint.aggregateId, "case-export-001");
+  assert.equal(bundle.auditCheckpoint.eventCount, bundle.snapshot.events.length);
+  assert.equal(bundle.auditCheckpoint.latestVersion, 14);
+  assert.match(bundle.auditCheckpoint.checkpointHash, /^sha256:[a-f0-9]{64}$/);
+  assert.equal(bundle.referenceBundles.length, 1);
+  assert.equal(bundle.referenceBundles[0].bundleId, "bundle-export-001");
+  assert.equal(bundle.referenceBundles[0].assets.length, 2);
   assert.equal(bundle.roCrateMetadata["@context"], "https://w3id.org/ro/crate/1.1/context");
   assert.equal(bundle.prov["@context"], "https://www.w3.org/ns/prov#");
   assert.equal(bundle.workflowRunCrates.length, 1);
   assert.equal(bundle.workflowRunCrates[0].runId, "analysis-run-export-001");
   assert.equal(bundle.drsObjects.length, 1);
+  assert.match(bundle.snapshot.events[0].eventHash, /^sha256:[a-f0-9]{64}$/);
+  assert.equal(bundle.snapshot.events[0].previousEventHash, undefined);
+  assert.equal(
+    bundle.snapshot.events[1].previousEventHash,
+    bundle.snapshot.events[0].eventHash,
+  );
+  assert.equal(
+    bundle.auditCheckpoint.lastEventHash,
+    bundle.snapshot.events[bundle.snapshot.events.length - 1].eventHash,
+  );
   assert.equal(bundle.phenopacket.id, "case-export-001");
   assert.equal(bundle.phenopacket.subject.id, "subject-export-001");
   assert.equal(bundle.phenopacket.biosamples[0].id, "sample-export-001");

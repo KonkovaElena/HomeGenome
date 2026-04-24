@@ -1,8 +1,8 @@
 ---
 title: "HomeGenome Docs Map"
 status: "active"
-version: "1.0.0"
-last_updated: "2026-04-21"
+version: "1.1.0"
+last_updated: "2026-04-24"
 tags: [homegenome, docs, navigation]
 mode: "tutorial"
 ---
@@ -26,7 +26,8 @@ mode: "tutorial"
 2. [reference/architecture-skeleton-2026-04-21.md](reference/architecture-skeleton-2026-04-21.md)
 3. [reference/intended-use.md](reference/intended-use.md)
 4. [reference/case-export-bundle-contract.md](reference/case-export-bundle-contract.md)
-5. [reference/homegenome-control-plane.openapi.yaml](reference/homegenome-control-plane.openapi.yaml)
-6. [reference/standards-adoption-matrix-2026-04-22.md](reference/standards-adoption-matrix-2026-04-22.md)
-7. [explanation/home-sequencing-analysis.md](explanation/home-sequencing-analysis.md)
-8. [evidence/extraction-and-sota-baseline-2026-04-21.md](evidence/extraction-and-sota-baseline-2026-04-21.md)
+5. [reference/security-threat-model-2026-04-24.md](reference/security-threat-model-2026-04-24.md)
+6. [reference/homegenome-control-plane.openapi.yaml](reference/homegenome-control-plane.openapi.yaml)
+7. [reference/standards-adoption-matrix-2026-04-22.md](reference/standards-adoption-matrix-2026-04-22.md)
+8. [explanation/home-sequencing-analysis.md](explanation/home-sequencing-analysis.md)
+9. [evidence/extraction-and-sota-baseline-2026-04-21.md](evidence/extraction-and-sota-baseline-2026-04-21.md)

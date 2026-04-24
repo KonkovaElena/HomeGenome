@@ -1,4 +1,5 @@
 import {
+  normalizeReferenceBundleAssets,
   ReferenceBundleRecord,
   RegisterReferenceBundleInput,
   normalizeTimestamp,
@@ -21,6 +22,7 @@ export class InMemoryReferenceBundleRegistry implements IReferenceBundleRegistry
       version: input.version,
       description: input.description,
       createdAt: normalizeTimestamp(input.createdAt),
+      assets: normalizeReferenceBundleAssets(input.assets),
     };
 
     this.bundles.set(record.bundleId, record);

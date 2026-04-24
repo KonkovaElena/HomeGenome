@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, utimes, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, utimes, writeFile } from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
 import {
@@ -253,6 +253,15 @@ test("file-backed artifact and reference registries persist across adapter insta
     bundleId: "bundle-file-030",
     name: "GRCh38",
     version: "2026.04",
+    assets: [
+      {
+        assetId: "bundle-file-030-fasta",
+        role: "REFERENCE_FASTA",
+        uri: "references/grch38.fa.gz",
+        checksum:
+          "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      },
+    ],
     createdAt: "2026-04-22T10:06:00.000Z",
   });
 
@@ -263,6 +272,11 @@ test("file-backed artifact and reference registries persist across adapter insta
 
   assert.equal(artifact?.artifactId, "artifact-file-030");
   assert.equal(bundle?.bundleId, "bundle-file-030");
+  assert.equal(bundle?.assets.length, 1);
+  assert.equal(
+    bundle?.assets[0].checksum,
+    "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+  );
 });
 
 test("file-backed event store recovers from a stale orphaned lock file", async () => {
@@ -292,4 +306,37 @@ test("file-backed event store recovers from a stale orphaned lock file", async (
 
   assert.equal(events.length, 1);
   assert.deepEqual(events[0].detail, { recovered: true });
+});
+
+test("file-backed event store detects tampering in the persisted hash chain", async () => {
+  const tempDir = await createTempDir();
+  const filePath = path.join(tempDir, "events-tamper.json");
+
+  const store = new FileBackedEventStore<TestEventInput>(filePath);
+  await store.append("case-file-tamper-001", 0, [
+    {
+      aggregateId: "case-file-tamper-001",
+      type: "CASE_CREATED",
+      occurredAt: "2026-04-24T09:00:00.000Z",
+      detail: { phase: 1 },
+    },
+    {
+      aggregateId: "case-file-tamper-001",
+      type: "CASE_UPDATED",
+      occurredAt: "2026-04-24T09:01:00.000Z",
+      detail: { phase: 2 },
+    },
+  ]);
+
+  const rawState = await readFile(filePath, "utf8");
+  const parsedState = JSON.parse(rawState) as Record<string, Array<Record<string, unknown>>>;
+  parsedState["case-file-tamper-001"][0].detail = { phase: 999 };
+  await writeFile(filePath, `${JSON.stringify(parsedState, null, 2)}\n`, "utf8");
+
+  const reloadedStore = new FileBackedEventStore<TestEventInput>(filePath);
+
+  await assert.rejects(
+    () => reloadedStore.listByAggregateId("case-file-tamper-001"),
+    /tamper|hash chain|integrity/i,
+  );
 });

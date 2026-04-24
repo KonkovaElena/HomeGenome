@@ -321,7 +321,7 @@ components:
       additionalProperties: false
     HomeGenomeAuditEventRecord:
       type: object
-      required: [aggregateId, type, occurredAt, detail, version]
+      required: [aggregateId, type, occurredAt, detail, version, eventHash]
       properties:
         aggregateId:
           type: string
@@ -337,6 +337,12 @@ components:
           additionalProperties: true
         version:
           type: integer
+        previousEventHash:
+          type: string
+          pattern: ^sha256:[a-f0-9]{64}$
+        eventHash:
+          type: string
+          pattern: ^sha256:[a-f0-9]{64}$
       additionalProperties: false
     HomeGenomeCaseSnapshot:
       type: object
@@ -473,6 +479,78 @@ components:
         nextflowSessionId:
           type: string
       additionalProperties: false
+    AuditCheckpointDigest:
+      type: object
+      required:
+        - aggregateId
+        - generatedAt
+        - eventCount
+        - latestVersion
+        - checkpointHash
+      properties:
+        aggregateId:
+          type: string
+        generatedAt:
+          type: string
+          format: date-time
+        eventCount:
+          type: integer
+        latestVersion:
+          type: integer
+        firstEventHash:
+          type: string
+          pattern: ^sha256:[a-f0-9]{64}$
+        lastEventHash:
+          type: string
+          pattern: ^sha256:[a-f0-9]{64}$
+        checkpointHash:
+          type: string
+          pattern: ^sha256:[a-f0-9]{64}$
+      additionalProperties: false
+    ReferenceBundleAssetRecord:
+      type: object
+      required:
+        - assetId
+        - role
+        - uri
+        - checksum
+      properties:
+        assetId:
+          type: string
+        role:
+          type: string
+        uri:
+          type: string
+        checksum:
+          type: string
+          pattern: ^sha256:[a-f0-9]{64}$
+      additionalProperties: false
+    ReferenceBundleRecord:
+      type: object
+      required:
+        - bundleId
+        - name
+        - version
+        - createdAt
+        - assets
+      properties:
+        bundleId:
+          type: string
+        name:
+          type: string
+        version:
+          type: string
+        description:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        assets:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/ReferenceBundleAssetRecord"
+      additionalProperties: false
     PhenopacketSubjectRecord:
       type: object
       required: [id]
@@ -604,6 +682,9 @@ components:
         - caseId
         - generatedAt
         - generatedBy
+        - bundleChecksum
+        - auditCheckpoint
+        - referenceBundles
         - phenopacket
         - roCrateMetadata
         - workflowRunCrates
@@ -623,6 +704,16 @@ components:
           format: date-time
         generatedBy:
           type: string
+        bundleChecksum:
+          type: string
+          pattern: ^sha256:[a-f0-9]{64}$
+        auditCheckpoint:
+          $ref: "#/components/schemas/AuditCheckpointDigest"
+        referenceBundles:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/ReferenceBundleRecord"
         phenopacket:
           $ref: "#/components/schemas/PhenopacketRecord"
         roCrateMetadata:

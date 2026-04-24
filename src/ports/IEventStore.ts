@@ -4,6 +4,8 @@ export interface EventStoreAppendInput {
 
 export interface EventStoreAppendRecord extends EventStoreAppendInput {
   version: number;
+  previousEventHash?: string;
+  eventHash: string;
 }
 
 export type PersistedEventRecord<

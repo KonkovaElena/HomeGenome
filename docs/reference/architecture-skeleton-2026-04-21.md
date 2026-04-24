@@ -1,8 +1,8 @@
 ---
 title: "HomeGenome Architecture Skeleton"
 status: "active"
-version: "1.0.0"
-last_updated: "2026-04-21"
+version: "1.1.0"
+last_updated: "2026-04-24"
 tags: [homegenome, architecture, genomics, control-plane, openrna]
 mode: "reference"
 ---
@@ -180,6 +180,7 @@ Domain rules:
 Responsibilities:
 
 - append-only event stream;
+- tamper-evident event chain for persisted audit records;
 - correlation IDs;
 - artifact hashing;
 - lineage graph from biosample to report;

@@ -25,6 +25,7 @@
   "scripts": {
     "prebuild": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
     "build": "tsc -p tsconfig.build.json",
+    "sbom:cyclonedx:file": "node scripts/write-cyclonedx-sbom.mjs homegenome-runtime-sbom.cdx.json",
     "test": "node --import tsx --test tests/**/*.test.ts",
     "test:coverage": "node --import tsx --experimental-test-coverage --test-coverage-include=src/**/*.ts --test-coverage-lines=65 --test-coverage-functions=75 --test-coverage-branches=55 --test tests/**/*.test.ts",
     "test:update-snapshots": "node --import tsx --test --test-update-snapshots tests/**/*.test.ts",

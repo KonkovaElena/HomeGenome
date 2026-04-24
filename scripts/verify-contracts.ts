@@ -256,6 +256,7 @@ function assertContains(
 function main(): void {
   const repoRoot = process.cwd();
   const codeFile = path.resolve(repoRoot, "src", "application", "HomeGenomeControlPlane.ts");
+  const domainFile = path.resolve(repoRoot, "src", "domain", "homeGenome.ts");
   const openApiFile = path.resolve(
     repoRoot,
     "docs",
@@ -339,6 +340,68 @@ function main(): void {
     errors,
   );
 
+  const referenceBundleTs = extractInterfaceShape(domainFile, "ReferenceBundleRecord");
+  const referenceBundleYaml = extractYamlSchemaShape(openApiText, "ReferenceBundleRecord");
+  const referenceBundleJson = extractJsonSchemaShape(
+    resolveJsonPointer(jsonSchema, "#/$defs/referenceBundleRecord"),
+  );
+
+  assertExactMatch(
+    "ReferenceBundleRecord properties vs OpenAPI",
+    referenceBundleTs.properties,
+    referenceBundleYaml.properties,
+    errors,
+  );
+  assertExactMatch(
+    "ReferenceBundleRecord required vs OpenAPI",
+    referenceBundleTs.required,
+    referenceBundleYaml.required,
+    errors,
+  );
+  assertExactMatch(
+    "ReferenceBundleRecord properties vs JSON Schema",
+    referenceBundleTs.properties,
+    referenceBundleJson.properties,
+    errors,
+  );
+  assertExactMatch(
+    "ReferenceBundleRecord required vs JSON Schema",
+    referenceBundleTs.required,
+    referenceBundleJson.required,
+    errors,
+  );
+
+  const referenceBundleAssetTs = extractInterfaceShape(domainFile, "ReferenceBundleAssetRecord");
+  const referenceBundleAssetYaml = extractYamlSchemaShape(openApiText, "ReferenceBundleAssetRecord");
+  const referenceBundleAssetJson = extractJsonSchemaShape(
+    resolveJsonPointer(jsonSchema, "#/$defs/referenceBundleAssetRecord"),
+  );
+
+  assertExactMatch(
+    "ReferenceBundleAssetRecord properties vs OpenAPI",
+    referenceBundleAssetTs.properties,
+    referenceBundleAssetYaml.properties,
+    errors,
+  );
+  assertExactMatch(
+    "ReferenceBundleAssetRecord required vs OpenAPI",
+    referenceBundleAssetTs.required,
+    referenceBundleAssetYaml.required,
+    errors,
+  );
+  assertExactMatch(
+    "ReferenceBundleAssetRecord properties vs JSON Schema",
+    referenceBundleAssetTs.properties,
+    referenceBundleAssetJson.properties,
+    errors,
+  );
+  assertExactMatch(
+    "ReferenceBundleAssetRecord required vs JSON Schema",
+    referenceBundleAssetTs.required,
+    referenceBundleAssetJson.required,
+    errors,
+  );
+
   const inputTs = extractInterfaceShape(codeFile, "ExportCaseBundleInput");
   const inputYaml = extractYamlSchemaShape(openApiText, "ExportCaseBundleInput");
 
@@ -399,6 +462,36 @@ function main(): void {
     "JSON Schema artifact checksum pattern",
     JSON.stringify(jsonSchema),
     "^sha256:[a-f0-9]{64}$",
+    errors,
+  );
+  assertContains(
+    "JSON Schema bundle checksum property",
+    JSON.stringify(jsonSchema),
+    "bundleChecksum",
+    errors,
+  );
+  assertContains(
+    "OpenAPI audit event hash field",
+    openApiText,
+    "eventHash:",
+    errors,
+  );
+  assertContains(
+    "OpenAPI audit event previous hash field",
+    openApiText,
+    "previousEventHash:",
+    errors,
+  );
+  assertContains(
+    "JSON Schema audit event hash field",
+    JSON.stringify(jsonSchema),
+    "eventHash",
+    errors,
+  );
+  assertContains(
+    "JSON Schema audit event previous hash field",
+    JSON.stringify(jsonSchema),
+    "previousEventHash",
     errors,
   );
   assertContains(
