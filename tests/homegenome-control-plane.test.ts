@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { EOL } from "node:os";
 import path from "node:path";
 import { HomeGenomeControlPlane } from "../src/application/HomeGenomeControlPlane";
 import { InMemoryArtifactStore } from "../src/adapters/InMemoryArtifactStore";
@@ -815,7 +816,7 @@ test("control plane exports a case bundle with RO-Crate, PROV, and DRS reference
     bundle,
     path.resolve("tests", "snapshots", "case-export-bundle.snapshot.json"),
     {
-      serializers: [(value) => JSON.stringify(value, null, 2) + "\n"],
+      serializers: [(value) => JSON.stringify(value, null, 2).replace(/\n/g, EOL) + EOL],
     },
   );
 });
