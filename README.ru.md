@@ -1,28 +1,27 @@
 # HomeGenome
 
-English version: [README.md](README.md)
-Русская версия: этот файл
+[English](README.md) | Русский
 
-HomeGenome — локальный genomics research repository про air-gapped секвенирование генома человека, воспроизводимые nanopore workflows и ранний TypeScript control plane scaffold для операторского управления без ухода в clinical-looking продуктовые обещания.
+`HomeGenome` — локальный исследовательский репозиторий по секвенированию генома человека в изолированном контуре, воспроизводимым пайплайнам на базе Oxford Nanopore и раннему TypeScript-слою управления для операторских сценариев.
 
-Это не медицинское изделие, не клинический workflow и не система для персональных лечебных решений. Репозиторий задаёт исследовательскую и инженерную базу для local genomics control plane.
+Это не медицинское изделие, не клинический рабочий процесс и не система для выбора лечения. Репозиторий задаёт исследовательскую и инженерную основу для локального, трассируемого геномного контура.
 
 ## Статус
 
-- Тип проекта: docs-first research repo с уже существующим code-bearing runtime slice.
-- Текущая зрелость: архитектурный корпус плюс минимальный Node 24 / TypeScript control plane.
-- Граница безопасности: research and technical evaluation only.
-- Публикационный статус: локально проект подготовлен к GitHub, но provenance и GitHub-side настройки ещё требуют финального прохода.
+- Тип проекта: docs-first исследовательский репозиторий с ранним исполняемым срезом.
+- Текущая зрелость: архитектурный корпус плюс минимальный Node 24 / TypeScript runtime slice.
+- Граница безопасности: только исследовательская и инженерная оценка.
+- Публикационная готовность: базовая подготовка к GitHub выполнена, но часть GitHub-side настроек и provenance-проходов остаётся финализировать на стороне платформы.
 
 Формальная граница intended use зафиксирована в [docs/reference/intended-use.md](docs/reference/intended-use.md).
 
 ## Что есть в репозитории
 
-- reference и explanation corpus по локальному nanopore sequencing, bioinformatics toolchain и boundary между анализом, интерпретацией и review;
-- ранний control plane scaffold с жизненным циклом кейса, workflow dispatch tracking и event-backed provenance;
-- file-backed durable adapters с cross-process locking для текущей локальной persistence baseline;
-- явные порты для sequencing telemetry и adaptive sampling через ONT MinKNOW.
-- переносимый Case Export Bundle контракт с RO-Crate metadata, PROV summary и DRS-like ссылками на артефакты.
+- корпус справочной и объясняющей документации по локальному nanopore sequencing и биоинформатическому стеку;
+- ранний слой управления с жизненным циклом кейса, отслеживанием workflow dispatch и event-backed provenance;
+- file-backed durable adapters с блокировками между процессами;
+- явные порты для sequencing telemetry и adaptive sampling через ONT MinKNOW;
+- переносимый контракт Case Export Bundle с RO-Crate metadata, PROV summary и DRS-подобными ссылками на артефакты.
 
 ## Быстрый старт
 
@@ -42,24 +41,28 @@ npm run test:coverage
 npm run build
 ```
 
-## Что уже реализовано в runtime slice
+## Что уже реализовано в коде
 
-Код в `src/` и `tests/` пока сознательно узкий. Сейчас он покрывает:
+Текущий кодовый слой в `src/` и `tests/` покрывает:
 
-- case lifecycle и state-machine enforcement;
-- регистрацию biosamples, sequencing runs, artifacts и reference bundles;
-- append-only audit trail для действий control plane;
-- workflow dispatch и workflow-run tracking;
-- file-backed durability для event и workflow state;
+- жизненный цикл кейса и контроль переходов состояния;
+- регистрацию биоматериалов, sequencing runs, артефактов и reference bundles;
+- append-only audit trail для действий контура управления;
+- workflow dispatch и tracking выполнения;
+- file-backed durable storage для event и workflow state;
 - ingestion sequencing telemetry;
-- adaptive sampling updates через явный `IMinKnowClient` port.
+- обновления adaptive sampling через явный порт `IMinKnowClient`;
 - экспорт case bundle с RO-Crate metadata и PROV/DRS-совместимыми полями.
 
-Пока здесь нет полноценного MinKNOW adapter, полного sequencing operations layer и clinical-grade durability.
+Чего пока нет:
+
+- полноценного адаптера MinKNOW;
+- полного слоя sequencing operations;
+- клинически ориентированной устойчивости хранения и развёртывания.
 
 ## С чего читать
 
-Если нужен короткий путь по репозиторию, начните с этого набора:
+Если нужен короткий маршрут по репозиторию, начните с:
 
 1. [docs/reference/intended-use.md](docs/reference/intended-use.md)
 2. [docs/reference/architecture-skeleton-2026-04-21.md](docs/reference/architecture-skeleton-2026-04-21.md)
@@ -70,38 +73,38 @@ npm run build
 7. [docs/how-to/implementation-roadmap-2026-04-21.md](docs/how-to/implementation-roadmap-2026-04-21.md)
 8. [docs/reference/sources-and-provenance.md](docs/reference/sources-and-provenance.md)
 
-Полная карта документов находится в [docs/README.md](docs/README.md).
+Полная карта документации: [docs/README.md](docs/README.md).
 
 ## Языковая политика
 
-Глубокий документационный корпус сейчас остаётся в основном русскоязычным. Это не случайность: проект вырос из исследовательского и архитектурного контура, который изначально вёлся на русском.
+Основной корпус документации по-прежнему в значительной степени русскоязычный, потому что проект рос из локального исследовательского и архитектурного контура.
 
-Публичные entrypoints теперь разведены так:
+Публичные входные точки теперь разделены так:
 
 - [README.md](README.md) — английский входной слой;
-- [README.ru.md](README.ru.md) — русская версия для основного корпуса и аудитории;
+- [README.ru.md](README.ru.md) — русская версия для основной аудитории проекта;
 - названия инструментов, стандартов и API сохранены на английском там, где это технически точнее.
 
-## Safety и research boundary
+## Границы безопасности и применения
 
-HomeGenome не предназначен для:
+`HomeGenome` не предназначен для:
 
 - автономной диагностики;
 - прямого выбора лечения;
-- unsupervised therapeutic design;
-- публичной работы с реальными персональными геномными данными внутри этого репозитория.
+- неконтролируемого терапевтического проектирования;
+- публикации или обработки реальных идентифицируемых геномных данных внутри этого репозитория.
 
-Связка с OpenRNA остаётся future, policy-gated architectural surface, а не частью текущего baseline. См. [docs/explanation/openrna-bridge.md](docs/explanation/openrna-bridge.md).
+Связка с `OpenRNA` остаётся будущим, policy-gated архитектурным швом, а не частью текущей рабочей базы. См. [docs/explanation/openrna-bridge.md](docs/explanation/openrna-bridge.md).
 
 ## Структура репозитория
 
-- `src/` — TypeScript control-plane scaffold
-- `tests/` — `node:test` regression suite
-- `docs/reference/` — boundaries, architecture, provenance
-- `docs/explanation/` — длинные технические объяснения
-- `docs/research/` — датированные research memos
-- `docs/how-to/` — implementation и publication workflows
-- `docs/evidence/` — audits и evidence snapshots
+- `src/` — TypeScript runtime slice;
+- `tests/` — regression suite на `node:test`;
+- `docs/reference/` — границы, архитектура, provenance;
+- `docs/explanation/` — длинные технические объяснения;
+- `docs/research/` — датированные исследовательские заметки;
+- `docs/how-to/` — практические маршруты реализации и публикации;
+- `docs/evidence/` — аудиты и снимки evidence base.
 
 ## Community и citation
 
@@ -111,10 +114,10 @@ HomeGenome не предназначен для:
 - [SUPPORT.md](SUPPORT.md)
 - [CITATION.cff](CITATION.cff)
 
-## Что ещё осталось до полного public launch
+## Что ещё осталось до полного публичного вывода
 
-- финальный provenance pass для длинных текстов, опирающихся на внешние источники;
+- финальный provenance-проход по длинным текстам, которые опираются на внешние источники;
 - GitHub-side настройка branch protection, private vulnerability reporting, repository topics и social preview;
-- optional runtime follow-up: durable stores для sample/run/artifact slices beyond the current workflow and event baseline.
+- дальнейшее развитие runtime для устойчивых sample/run/artifact slices поверх текущего event и workflow baseline.
 
-Актуальный publication audit находится в [docs/evidence/publication-readiness-audit-2026-04-21.md](docs/evidence/publication-readiness-audit-2026-04-21.md).
+Актуальный publication audit: [docs/evidence/publication-readiness-audit-2026-04-21.md](docs/evidence/publication-readiness-audit-2026-04-21.md).
